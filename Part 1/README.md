@@ -22,26 +22,19 @@ I forked this guide from amazing works done by Dumlu Timuralp and Hakan Akkurt a
 [Back to Table of Contents](#Table-Of-Contents)
 
 * Below logical topology will be implemented in this guide.
+![](2019-10-24-21-45-02.png)
 
-![](2019-05-16-19-24-02.png)
-
-* Three VLANs are configured in the physical underlay.
-
-VLAN 10 : Management VLAN (vCenter, NSX-T Manager, ESX Management VMkernel and NSX-T Edge Transport Node Management interface are part of this VLAN , 10.190.1.0 /24)  
-VLAN 30 : Transport VLAN for Geneve Tunnelling (ESX Host' s and NSX-T Edge Transport Node' s VTEP interfaces are part of this VLAN, 10.190.3.0 /24)  
-VLAN 40 : Routing VLAN for External Physical Router peering (Tier 0's Uplink is part of this VLAN, 10.190.4.0 /24)  
-All the other subnets are overlay networks  
 
 NSX-T Data Center 2.5 can works with tow types of API when it come to container integrations:   
 
 
 _**Manager API:**_  
 In this the NSX-T constructs are configured from "Advanced Networking & Security" menu.
-![](4.png)
+![](2019-10-24-21-46-15.png)
 
 _**Policy API:**_  
 With Policy API the NSX-T constructs are configured from  the Network and Security Tab in the UI, also known as Simplified UI
-![](3.png)
+![](2019-10-24-21-46-48.png)
 
 
 _**In this guide we will work with the Policy API**_
@@ -54,11 +47,11 @@ _**In this guide we will work with the Policy API**_
 
 vCenter is configured as a "Compute Manager" on NSX-T Manager (_**System -> Fabric -> Compute Managers**_)
 
-![](2019-05-16-12-21-57.png)
+![](2019-10-24-21-48-30.png)
 
 This helps for easier ESX cluster management since NSX-T automatically pulls the cluster information from the vCenter. When a new ESX Host is added to the cluster, it will automatically appear on "Host Transport Nodes" list in NSX GUI.  
 
-![](2019-05-27-00-20-08.png)
+![](2019-10-24-21-49-34.png)
 
 ESX Host preparation process can also be automated for the the ESX Hosts by configuring "Transport Node Profiles" in Fabric -> Profiles menu.
 
@@ -66,17 +59,15 @@ _**Note: Compute manager feature is not for inventory collection (VM, containers
 
 ## Transport Zone
 
-Three transport zones are configured. (_**System -> Fabric -> Transport Zones**_)
-
-Edge Transport Nodes are attached to "TZ-VLAN-Edge" and "TZ-Overlay" transport zones.
+Tow transport zones are configured. (_**System -> Fabric -> Transport Zones**_)
 
 Host Transport Node is attached to "TZ-VLAN" and "TZ-Overlay" transport zones.
 
-![](2019-05-16-13-54-31.png)
+![](2019-10-24-21-50-19.png)
 
-Notice that both "TZ-VLAN" and "TZ-Overlay" transport zones have the exact same _**N-VDS NAME**_ specified. This helps in scenarios which the same ESX Host, having a single virtual switch onit,  has some workloads connected to an overlay and some other workloads connected to VLAN based logical switches/segments. And since each N-VDS is an individual virtual switch, if a different N-VDS name is used for each transport zone then multiple N-VDSs has to be instantiated on the same Host Tranport node which will consume more physical ports on the same ESX Host for resiliency. Because the same vmnic/pnic _**CANNOT**_ be attached to two different virtual switches.
+Notice that both "TZ-VLAN" and "TZ-Overlay" transport zones have the exact diffrent _**N-VDS NAME**_ specified. each N-VDS is an individual virtual switch, if a different N-VDS name is used for each transport zone then multiple N-VDSs has to be instantiated on the same Host Tranport node which will consume more physical ports on the same ESX Host for resiliency. Because the same vmnic/pnic _**CANNOT**_ be attached to two different virtual switches.
 
- A seperate VLAN transport zone is used as "TZ-VLAN-Edge" for Edge Transport Node. The reason for this is the uplink segment on Edge Transport Node will be used by T0 only for peering with the physical world. Hence any VLAN Logical Switch/segment configured on the Edge Transport Node does NOT need to extend to the Host Transport Nodes. **For better segregation of traffic this is the way preferred in this environment.** This does NOT mean that this is the only way to configure the Edge Transport Node. You can collapse your Edge Transport Node on a single N-VDS, just like the Host Transport Node. NSX-T platform is extremely flexible in terms of connectivity hence there are many different ways to use Transport zones and N-VDS constructs based on the design requirements.
+
 
 ## VTEP Pool
 
@@ -84,38 +75,49 @@ Notice that both "TZ-VLAN" and "TZ-Overlay" transport zones have the exact same 
 
 _**Advanced Networking & Security -> Inventory -> Groups -> Ip Pools**_
 
-![](2019-05-16-14-05-07.png)
+![](2019-10-24-21-55-46.png)
 
 ## Uplink Profile
 
-Two uplink profiles are used. (_**System ->  Fabric -> Profiles -> Uplink Profiles**_)
+Two uplink profiles are used.  
 
-* **"nsx-edge-single-nic-uplink-profile"** for Edge Transport Nodes
-* **"esx-uplink-profile"** for Host Transport Node (ESX)
+### Edge Uplink Profile
+ _**System ->  Fabric -> Profiles -> Uplink Profiles**_  
 
-![](2019-05-16-13-53-40.png)
+The names "uplink1" in the "Edge-Uplink-Profile" are just user defined names. They can be "vmware1" as well.  The same names mst be used when preparing the transport node with the respective uplink profile. This is another abstraction that NSX-T has for easier automation.  
+The VLAN ID 0 is beucase the VTEP interface of the Edge Transport Node will _**NOT**_ be tagging the overlay traffic. It will be sending the overlay traffic untagged to the underlying "vSphere Standard Switch (vSS)" on the ESX Host. The respective port group on "vSS"  will be tagging the overlay traffic with the appropriate VLAN ID onwards to the physical network.we planing to connect the edge with vDS/vSS portgroup and define tag there.  
 
-The uplink names "uplink1" and "uplink2" in the "esx-uplink-profile" are just user defined names. They can be "vmware1" , "vmware2" as well.  The same names mst be used when preparing the transport node with the respective uplink profile. This is another abstraction that NSX-T has for easier automation.
+_**Avoid tag twise inside NSX-T profile and then on the vDS/vSS.**_  
 
-Notice that "esx-uplink-profile" has Transport VLAN ID : 30. Because VTEP interface (vmkernel/vmk) on the ESX Host will be tagging all the overlay traffic. The "nsx-edge-single-nic-uplink-profile" on the other hand does _**NOT**_ have a VLAN ID configured. The reason is VTEP interface of the Edge Transport Node will _**NOT**_ be tagging the overlay traffic. It will be sending the overlay traffic untagged to the underlying "vSphere Standard Switch (vSS)" on the ESX Host. The respective port group on "vSS"  will be tagging the overlay traffic with the appropriate VLAN ID onwards to the physical network.
+here is the screnshots for the edge-uplink-profile:
+
+![](2019-10-24-22-10-04.png) 
 
 
-# Host Transport Node
+### ESX Uplink Profile 
+This is the place we define the ESX profile for the Transport Node.
+  
+ (_**System ->  Fabric -> Profiles -> Transport Node Profiles**_)  
+ 
+
+![](2019-10-24-22-28-17.png)
+
+
+# Trnasport Node Proflie
+here bind the ESXi  uplink profile to the Trnasport Node Profile:
+
+![](2019-10-24-22-14-22.png)
+
+The esxi uplink profile and TEP IP pool associations for this ESX Host is shown below.
+![](2019-10-24-22-50-36.png)
+
+
 [Back to Table of Contents](#Table-Of-Contents)
 
-The ESX Host (ESX#5) in ClusterC is prepared for NSX-T. (_**System ->  Fabric -> Nodes -> Host Transport Nodes**_)
 
-![](2019-05-16-12-21-57.png)
 
-ESX#5 has three vmnics (pnics).
 
-vmnic0 is used by vSS. Management vmkernel interface of the ESX Host (vmk0) is also attached to vSS. vmnic1 and vmnic2 are attached to N-VDS.
 
-![](2019-05-16-12-53-49.png)
-
-Note : The logical switches/segments on the N-VDS in this screenshot are actually configured in an upcoming step. At this stage there is supposed to be no logical switches on the N-VDS.
-
-The transport zones and uplink associations for this ESX Host is shown below.
 
 ![](2019-05-16-13-49-15.png)
 
