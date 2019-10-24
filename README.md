@@ -3,11 +3,11 @@ This repo contain the demo for vmworld 2019 and show how NSX-T SDN can work in p
 
 _**This disclaimer informs readers that the views, thoughts, and opinions expressed in this series of posts belong solely to the author, and not necessarily to the author’s employer, organization, committee or other group or individual.**_
 
-Credits
-This guide is based on Dumlue Trump Amazning Guide:
-by Dumlu Timuralp [@dumlutimuralp](https://twitter.com/dumlutimuralp) / [LinkedIn](https://www.linkedin.com/in/dumlutimuralp/) 
+### Credits  
+This guide is based on Dumlue Trump Amazning Guide:  
+ [@dumlutimuralp](https://twitter.com/dumlutimuralp) / [LinkedIn](https://www.linkedin.com/in/dumlutimuralp/) 
 
-his works can be found in this link:  
+His works can be found in this link:  
 https://github.com/dumlutimuralp/nsx-t-k8s  
   
 
@@ -46,7 +46,7 @@ Below articles focus on the management and data plane integration principles of 
 * K8S Node Dataplane Connectivity
 
 
-### [Part 2](hhttps://github.com/roie9876/NSXT-VMworld2019/README.md)
+### [Part 2](https://github.com/roie9876/NSXT-VMworld2019/README.md)
 
 * Container Network Interface (CNI)
 * NSX-T Components in Kubernetes Integration
