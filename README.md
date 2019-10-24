@@ -13,14 +13,23 @@ https://github.com/dumlutimuralp/nsx-t-k8s
 
 
 #  Software components used:  
-  
+
+### vSphere  
 vCenter 6.7 U3 (Build 14368073)  
 ESX 6.7 U3 (Build 14320388)  
+### NSX-T  
 NSX-T 2.5.0 (Build 14663978)  
 NSX Container Plugin 2.5.0 (Build 14628220)  
-Ubuntu Server 16.04.5  
+
+### Native K8S Clusters:
+Ubuntu Server Ubuntu 16.04.6 LTS  
 Docker CE 18.09.6  
 Kubernetes 1.15.5  
+
+### OpenShift Cluster:
+CentOS Linux release 7.6.1810 (Core)  
+OpenShift 3.11
+
 
 It is highly recommended to check the following resources for compatibility requirements
 * VMware Product Interoperability Matrices  
