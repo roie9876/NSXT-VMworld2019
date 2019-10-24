@@ -33,7 +33,7 @@ The goal of this series of posts is to outline and explain the steps to integrat
 
 Below articles focus on the management and data plane integration principles of NSX-T and K8S.
 
-### [Part 1](https://github.com/roie9876/NSXT-VMworld2019/README.md)
+### [Part 1](https://github.com/roie9876/NSXT-VMworld2019/tree/master/Part%201)
 
 * Topology Information
 * Fabric Preperation
