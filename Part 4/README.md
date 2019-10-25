@@ -602,22 +602,100 @@ metadata:
 </code></pre> 
 
 <pre><code>
-kubectl create -f acme-no-nat.yaml 
+root > cat acme-no-nat.yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+   name: acme
+   annotations:
+      ncp/no_snat: "True"
+root > kubectl create -f acme-no-nat.yaml
+namespace/acme created  
+  
+
+root > kubectl describe ns acme
+Name:         acme
+Labels:       <none>
+Annotations:  ncp/no_snat: True
+Status:       Active
+
+No resource quota.
+
+No resource limits.
+
 </code></pre>   
-  
-  
+
+We can see the results of the new namespace in NSX Segments, we have new Segment with the name: seg-k8cluster-acme-0.  
+In the PORTS we have 0 Connected PODs (we didn't deploy any PODs yet...)
+
+![](2019-10-25-16-13-36.png)
+
+NSXT curve new CIDR 10.19.2.0/24 where the 10.19.2.1 is the default Gateway for this namespce 
+![](2019-10-25-16-16-03.png)
+
+We can chekc if we have NCP create NAT rule for this namespace:  
+As you can see there is no any ANT entry for 10.19.2.0/42
+![](2019-10-25-16-17-39.png)
+
+
+Lets change the default namespace to acme:
 <pre><code>
-kubectl config set-context --current --namespace=acme  
-</code></pre>   
-  
+root > kubectl config set-context --current --namespace=acme
+Context "kubernetes-admin@kubernetes" modified.
+ </code></pre>   
+
+
+Deploy the acme application:  
 <pre><code>
-kubectl create -f acme_fitness.yaml  
-</code></pre>    
+root > kubectl create -f acme_fitness.yaml
+secret/redis-pass created
+secret/catalog-mongo-pass created
+secret/order-mongo-pass created
+secret/users-mongo-pass created
+service/cart-redis created
+deployment.apps/cart-redis created
+service/cart created
+deployment.apps/cart created
+configmap/catalog-initdb-config created
+service/catalog-mongo created
+deployment.apps/catalog-mongo created
+service/catalog created
+deployment.apps/catalog created
+deployment.apps/frontend created
+service/order-mongo created
+deployment.apps/order-mongo created
+service/order created
+deployment.apps/order created
+service/payment created
+deployment.apps/payment created
+configmap/users-initdb-config created
+service/users-mongo created
+deployment.apps/users-mongo created
+service/users created
+deployment.apps/users created
+ </code></pre>    
+
 
 <pre><code>
-watch kubectl get pod  
+root > kubectl get pod -o wide
+NAME                             READY   STATUS    RESTARTS   AGE   IP           NODE     NOMINATED NODE   READINESS GATES
+cart-6d84f4cf64-ftlbp            1/1     Running   0          42s   10.19.2.4    node02   <none>           <none>
+cart-redis-7fcdbcd8d8-848rx      1/1     Running   0          42s   10.19.2.5    node02   <none>           <none>
+catalog-587f7df8c8-7bxst         1/1     Running   0          41s   10.19.2.2    node02   <none>           <none>
+catalog-mongo-5c8db99954-l2plp   1/1     Running   0          41s   10.19.2.3    node02   <none>           <none>
+frontend-7557468545-9gzb2        1/1     Running   0          41s   10.19.2.6    node02   <none>           <none>
+order-c8885777b-kjdf7            1/1     Running   0          41s   10.19.2.8    node02   <none>           <none>
+order-mongo-7cc8f784f8-tl29b     1/1     Running   0          41s   10.19.2.7    node02   <none>           <none>
+payment-79bc456ff-cxprm          1/1     Running   0          40s   10.19.2.9    node02   <none>           <none>
+users-6d7c5dd7c8-t6jmc           1/1     Running   0          40s   10.19.2.11   node02   <none>           <none>
+users-mongo-7cfb97b5bb-mxhkc     1/1     Running   0          40s   10.19.2.10   node02   <none>           <none>
+  
 </code></pre>   
+As you can see, all the PODs get IPs from range 10.19.2.0/24
 
+We can see the reflections of the PODs in NSXT
+![](2019-10-25-16-20-59.png)
+Now we have 10 PORTs connected to this segments
 <pre><code>
 cat frontend-svc.yaml  
 </code></pre>  
