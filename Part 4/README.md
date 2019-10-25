@@ -249,11 +249,13 @@ for example lets find the UUID of the K8s-LB-Pool:
 We need to click on the NSX-T object that we would like to find his UUID:  
 
 
-There is small blue cirule refress button:  ![](2019-10-25-12-29-01.png) , Click on it and on the right new date will show up. as you can see in the image bellow the "id" : "k8s-LB-Poo" this is the object UUID.  
+There is small blue cirule refress button:  ![](2019-10-25-12-29-01.png) , Click on it and on the right new date will show up. as you can see in the image bellow  
+the **"id" : "k8s-LB-Poo"** this is the object UUID.  
   
   ![](2019-10-25-12-25-42.png)  
     
 
+now lets start to expalind the diffrent paramters:
 
 **policy_nsxapi = True** : User to specify that NCP will work with the Policy API.  
 
@@ -263,11 +265,15 @@ There is small blue cirule refress button:  ![](2019-10-25-12-29-01.png) , Click
 
 **enable_snat = True** : This parameter basically defines that all the K8S Pods in each K8S namespace in this K8S cluster will be SNATed (to be able to access the other resources in the datacenter external to NSX domain) . The SNAT rules will be autoatically provisioned on Tier 0 Router in this lab. The SNAT IP will be allocated from IP Pool named "K8S-NAT-Pool" that was configured back in Part 3.
 
-**** , **apiserver_host_port = 6443** : These parameters are for NCP to access K8S API. usaly this is the IP address of the master node, if we have clusters of k8s masters we nede to have LB with VIP address.
+**apiserver_host_port = 6443** : These parameters are for NCP to access K8S API. **Note this parnter need to configured multiple times in this yaml file, so every time you this parmter you need to configure the same value**
+  
+**apiserver_host_ip = 192.168.113.2**  
+This is the IP address of the master node, if we have clusters of k8s masters we nede to have LB with VIP address.  
+**Note this paramter need to configured multiple times in this yaml file, so every time you this parmter you need to configure the same value**
 
 **ingress_mode = nat** : This parameter basically defines that NSX will use SNAT/DNAT rules for K8S ingress (L7 HTTPS/HTTP load balancing) to access the K8S service at the backend.
 
-**nsx_api_managers = 192.168.110.34,192.168.110.35,192.168.110.36** , **nsx_api_user = admin** ,  **nsx_api_password = XXXXXXXXXXXXXX**  : These parameters are for NCP to access/consume the NSX Manager. in my lab i have 3 NSX managers, we need to provide the IPs of all managers (not the VIP of the managers). we can work with static username and passowrd (clear text) or we can work with certificate. in this demo i'm working with username and password.
+**nsx_api_managers = 192.168.110.34,192.168.110.35,192.168.110.36** , **nsx_api_user = admin** ,  **nsx_api_password = VMware1!VMware1!**  : These parameters are for NCP to access/consume the NSX Manager. in my lab i have 3 NSX managers, we need to provide the IPs of all managers (not the VIP of the managers). we can work with static username and passowrd (clear text) or we can work with certificate. in this demo i'm working with username and password.
 
 **insecure = True** : NSX Manager server certificate is not verified. in lab enviroment where the NSX manager is self sigeded its better to use this way.
 
@@ -275,7 +281,7 @@ There is small blue cirule refress button:  ![](2019-10-25-12-29-01.png) , Click
 
 **overlay_tz = a8811e7a-4d09-4076-94b3-7a9082750c64** : The UUID of the existing overlay transport zone that will be used for creating new logical switches/segments for K8S namespaces and container networking.
 
-**subnet_prefix = 24** : The size of the IP Pools for the namespaces that will be carved out from the main "K8S-POD-IP-BLOCK" configured in Part 3 (172.25.0.0 /16). Whenever a new K8S namespace is created a /24 IP pool will be allocated from thatthat IP block.
+**subnet_prefix = 24** : The size of the IP Pools for the namespaces that will be carved out from the main "K8S-POD-IP-BLOCK" configured in Part 3 (10.19.0.0 /16). Whenever a new K8S namespace is created a /24 IP pool will be allocated from thatthat IP block.
 
 **use_native_loadbalancer = True** : This setting is to use NSX-T load balancer for K8S Service Type : Load Balancer. Whenever a new K8S service is exposed with the Type : Load Balancer then a VIP will be provisioned on NSX-T LB attached to a Tier 1 Logical Router dedicated for LB function. The VIP will be allocated from the IP Pool named "K8S-LB-Pool" that was configured back in Part 3.
 
@@ -293,54 +299,67 @@ There is small blue cirule refress button:  ![](2019-10-25-12-29-01.png) , Click
 
 _**One additional configuration that is made in the yml file is removing the "#" from the line where it says "serviceAccountName: ncp-svc-account" . So that the NCP Pod has appropriate role and access to K8S cluster resources**_ 
 
-The edited yml file, "ncp-deployment-custom.yml" in this case, can now be deployed from anywhere. In this environment this yml file is copied to /home/vmware folder in K8S Master Node and deployed in the "nsx-system" namespace with the following command.
 
+here is the linke for the full ncp file i'm using for vmworld demo:
+[here](https://github.com/roie9876/NSXT-VMworld2019/blob/master/Part%204/ncp-vmworld2019.yml)
+
+The edited yml file, "ncp-vmworld2019.yml" in this case, can now be deployed from anywhere. In this environment this yml file is copied to /home/vmware folder in K8S Master Node and deployed   the following command.
+
+<pre><code>
+root@master:/home/localadmin# kubectl create  -f ncp-vmworld2019.yml
+customresourcedefinition.apiextensions.k8s.io/nsxerrors.nsx.vmware.com created
+customresourcedefinition.apiextensions.k8s.io/nsxlocks.nsx.vmware.com created
+namespace/nsx-system created
+serviceaccount/ncp-svc-account created
+clusterrole.rbac.authorization.k8s.io/ncp-cluster-role created
+clusterrole.rbac.authorization.k8s.io/ncp-patch-role created
+clusterrolebinding.rbac.authorization.k8s.io/ncp-cluster-role-binding created
+clusterrolebinding.rbac.authorization.k8s.io/ncp-patch-role-binding created
+serviceaccount/nsx-node-agent-svc-account created
+clusterrole.rbac.authorization.k8s.io/nsx-node-agent-cluster-role created
+clusterrolebinding.rbac.authorization.k8s.io/nsx-node-agent-cluster-role-binding created
+configmap/nsx-ncp-config created
+deployment.extensions/nsx-ncp created
+configmap/nsx-node-agent-config created
+daemonset.extensions/nsx-ncp-bootstrap created
+daemonset.extensions/nsx-node-agent created
+</code></pre> 
 
 
 
 Verify that the new namespace is created. 
 
 <pre><code>
-root@k8s-master:~# <b>kubectl get namespaces</b>
+root@master:/home/localadmin# kubectl get ns
 NAME              STATUS   AGE
-default           Active   5h22m
-kube-node-lease   Active   5h22m
-kube-public       Active   5h22m
-kube-system       Active   5h22m
-<b>nsx-system</b>        Active   5m47s
-root@k8s-master:~#
+default           Active   3d
+kube-node-lease   Active   3d
+kube-public       Active   3d
+kube-system       Active   3d
+nsx-system        Active   8s
+</code></pre> 
+
+<pre><code>
+root@master:/home/localadmin# kubectl get pod -n nsx-system
+NAME                       READY   STATUS     RESTARTS   AGE
+nsx-ncp-848cc8c8ff-qzmb8   1/1     Running    0          14s
+nsx-ncp-bootstrap-552hh    1/1     Running    0          14s
+nsx-ncp-bootstrap-5t8jv    1/1     Running    0          14s
+nsx-ncp-bootstrap-mncpl    0/1     Init:0/1   0          14s
+nsx-node-agent-fr86l       3/3     Running    0          14s
+nsx-node-agent-hwqm6       3/3     Running    0          14s
+nsx-node-agent-x2ndb       3/3     Running    0          14s
 </code></pre> 
 
 
-<pre><code>
-root@k8s-master:/home/vmware# <b>kubectl create -f ncp-deployment-custom.yml --namespace=nsx-system</b>
-configmap/nsx-ncp-config created
-deployment.extensions/nsx-ncp created
-root@k8s-master:/home/vmware#
-root@k8s-master:/home/vmware# <b>kubectl get pods --all-namespaces</b>
-NAMESPACE     NAME                                 READY   STATUS              RESTARTS   AGE
-kube-system   coredns-fb8b8dccf-b592z              0/1     ContainerCreating   0          5h45m
-kube-system   coredns-fb8b8dccf-j66fg              0/1     ContainerCreating   0          5h45m
-kube-system   etcd-k8s-master                      1/1     Running             0          5h44m
-kube-system   kube-apiserver-k8s-master            1/1     Running             0          5h44m
-kube-system   kube-controller-manager-k8s-master   1/1     Running             0          5h44m
-kube-system   kube-proxy-bk7rs                     1/1     Running             0          97m
-kube-system   kube-proxy-j4p5f                     1/1     Running             0          5h45m
-kube-system   kube-proxy-mkm4w                     1/1     Running             0          122m
-kube-system   kube-scheduler-k8s-master            1/1     Running             0          5h44m
-<b>nsx-system</b>    <b>nsx-ncp-7f65bbf6f6-mr29b </b>            1/1     <b>Running</b>             0          18s
-root@k8s-master:/home/vmware#
-</code></pre>
-
-As NCP is deployed as replicaset (replicas :1 is specified in deployment yml) , K8S will make sure that at a given time a single NCP Pod is running and healthy.
 
 **Notice the changes to the existing logical switches/segments, Tier 1 Logical Routers, Load Balancer below . All these newly created objects have been provisioned by NCP (as soon as NCP Pod has been successfully deployed) by identifying the  the K8S desired state and mapping the K8S resources in etcd to the NSX-T Logical Networking constructs.**
 
-LOGICAL SWITCHES  
-![](2019-06-07_20-39-24.png)
+LOGICAL Segments  
+![](2019-10-25-13-05-38.png)
 
-LOGICAL ROUTERS
-![](2019-06-03_20-39-41.png)
+New Tier1 LOGICAL Gateway:
+
 
 IP POOLS per Namespace
 ![](2019-06-03_21-06-24.png)
