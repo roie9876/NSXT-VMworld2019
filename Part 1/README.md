@@ -154,38 +154,56 @@ To provide resiliency for the centralized services (Tier 0 Services Router - SR 
 ![](2019-10-24-23-18-02.png)
 
 
-# Tier 0 Logical Router
+# Tier 0 Logical Gateway
 [Back to Table of Contents](#Table-Of-Contents)
 
-### Create Logical Switch/Segment for Tier 0 Logical Router Uplink Interface
-(_**Advanced Networking & Security -> Networking -> Switching -> Switches**_)
+### Create Logical Segment for Tier 0 Logical Gateway Uplink Interface
+(_**Networking -> Segments -> SEGMENTS**_)
 
-To attach Tier 0 Logical Router to the physical network, a VLAN logical switch/segment is needed. It is configured as "T0UplinkLS", shown below. Notice the VLAN ID : 0 , this means this logical switch will NOT tag traffic. As mentioned earlier, all traffic is being tagged by the underlying vSS on the ESX Host (which the Edge Transport Node is running on)
+To attach Tier 0 Logical Gateway to the physical network, a VLAN logical segment is needed. It is configured as "tier0-uplink", shown below. Notice the VLAN ID : 0 , this means this logical switch will NOT tag traffic. As mentioned earlier, all traffic is being tagged by the underlying vSS on the ESX Host (which the Edge Transport Node is running on)
 
-![](2019-05-16-20-40-25.png)
+![](2019-10-24-23-25-15.png)
 
 ### Create Tier 0 Logical Router
-(_**Networking & Tier-0 Gateways -> Add -> Tier-0 Gateway**_)
+(_**Networking ->  Tier-0 Gateways -> Add -> Tier-0 Gateway**_)
 
-A new Tier 0 Logical Gateway named as "tier0" is provisioned. Tier 0 Logical Router always has an SR (Services Router) component. When provisioning Tier 0 Logical Gateway, an Edge Cluster has to be selected to instantiate the SR component. HA Mode has been selected as Active-Active.
+A new Tier 0 Logical Gateway named as "tier0" is provisioned. Tier 0 Logical Gateway always has an SR (Services Router) component. When provisioning Tier 0 Logical Gateway, an Edge Cluster has to be selected to instantiate the SR component. HA Mode has been selected as Active-Active. 
 
 ![](2019-10-24-23-20-48.png)
 
 ### Tier 0 Logical Gateway Uplink Interface Configuration
-(_**networking > Segment -> Segment -> ADD SEGMENT**_)
+(_**networking > Tier0 Gateways -> Eedit tier0 -> INTERFACES**_)
 
-A new seegment interface need to provisioned on the Tier 0 Logical Gateway. In my lab i'm using nested eviroment so the VLAN ID is 0.
+We need to assigen IP address to the tier0-uplink interface. 
 
-![](2019-10-24-23-25-15.png)
+![](2019-10-25-05-04-08.png)  
+
+Click on the Set Interfaces and "ADD INTERFACE" , we need to create tow interfaces, for both tier0's. the new tow interfaces will connect to the same Segment we just created before "tier0-uplink", we could sepreate them to diffrent segment but for simplicity i'm using the same segment.
+![](2019-10-25-05-08-25.png)
+
+# Tier 0 BGP Configuration
+[Back to Table of Contents](#Table-Of-Contents)
+
+* BGP neighborship : (_**Networking -> tier0 Gateways -> "tier0"-> BGP**_)
+
+At this point Tier 0 run in Active/Active mode. We need to configured with BGP to dynamically announce the prefixes in the NSX domain to the physical network. Below are the BGP parameters used. Notice that "Local Address" is set to "All Uplinks" . This setting effectively enables BGP neighborship initiation on both Tier 0 Active and Tier 0 Active uplink interfaces.
+
+![](2019-10-24-23-54-09.png)
+
+* Route Redistribution to BGP : (_**Networking -> Tier0 Gateways -> "tier0" ->  Route Redistribution**_)
+At a minimum Tier0 Connected interfaces, Tier 1 NAT, Tier 1 Connected Interfaces and Tier 1 LB LB SNAT IP and LB VIP prefixes should be redistributed to BGP. This will be explained in upcoming chapters. but just to quickly touch on it.
+
+![](2019-10-24-23-56-40.png)
 
 
 # Tier 1 Logical Router
 [Back to Table of Contents](#Table-Of-Contents)
 
+for simplicty i will discribe the tier1 Gateway and Segments for the native K8s cluster, but the samce concept aplly for the OpenShift.
 ### Creating a Tier 1 Logical Router
 (_**Networking -> Tier01 Gateways-> Add -> Tier-1 Gateway**_)
 
-In this Lab we create tow Tier1 Gateways, one for the management of the OpenShift Cluster and the Second is for the K8s cluster.
+In this Lab we create two Tier1 Gateways, one for the management of the OpenShift Cluster and the Second is for the managment of the K8s cluster.
 A new Tier 1 Logical Gateway named as "k8s-mgmt" and "openshift-mgmt".  is provisioned and an Edge Cluster is NOT selected. Tier 1 Logical Router will not use an SR component. SR component is not mandatory for Tier 1; it is needed only when any centralized services (eg FW, NAT, LB) is used in Tier 1 Logical Router. In this environment, only the distributed routing feature will be used with this Tier 1 Logical Router. Tier 1's DR (Distributed Router) component will be connected to the Tier 0 which is provisioned earlier.
 
 ![](2019-10-24-23-31-37.png)
@@ -194,36 +212,56 @@ A new Tier 1 Logical Gateway named as "k8s-mgmt" and "openshift-mgmt".  is provi
 (_**Networking  -> Seegments**_)
 
 Each K8S/OpenShift Node is a VM.  
+The screnshot bellow is from the vCenter, as you can we have resouce pool for the OpenShift Cluster and resoudce pool for the Native K8s cluster.
 
 ![](2019-10-24-23-37-48.png)  
 
-All Nodes VM will be have two Ethernet interfaces.   
-For the K8s workers:  
-First segment interface is called k8s0managment, inside the ubuntu its called ens160 (vNIC1).  
+All Nodes VM will have two Ethernet interfaces.   
+For the K8s masters/workers. the first interface using for management. the second interface is using for PODs dataplane.
+
+
+# K8S Node Management Connectivity
+[Back to Table of Contents](#Table-Of-Contents)
+
+* Create a Logical Segment for K8S Node VM Management Connectivity : (_**Networking  -> Segments -> SEGMENT**_)
+
+A new _**overlay**_ logical segment, named as ****"K8s-managment"** is provisioned. Each K8S Node VM' s vNIC1 (ens160) will be connected to this logical switch/segment. K8S Master Node and Worker Nodes will be communicating with each other through this logical switch/segment. K8S Nodes will also check the liveness/readiness of the K8S PODs through this network/ens160(vNIC1)
+
+![](2019-10-25-05-27-00.png)
+
+
+# K8S Node Dataplane Connectivity
+[Back to Table of Contents](#Table-Of-Contents)
+
+* Create a Logical Segment for K8S Node VM Dataplane Connectivity : (_**Networking  -> Segments -> SEGMENT**_)
+
+* A seperate logical switch/segment will be used to connect the second vNIC (ens192) of each K8S Node VM. vNIC2 and this logical switch will be providing the transport medium for the K8S Pods (**NOT** nodes) to communicate with the infrastructure. This logical segment is named as **"k8s-container"** in this environment.
+
+![](2019-10-25-05-20-32.png)
+
+This logical switch/segment will **NOT** be connected to any Tier 0 or Tier 1 Logical Router. It will solely serve for the purpose of providing the transport for K8S Pods. This will be explained in the upcoming chapters.
+
+
+
+In the vCenter we need to connect this two logical segments, The first segment interface is called k8s-managment, inside the ubuntu its called ens160 (vNIC1).  
 The second interface is called k8s1-containers, inisde the ubuntu its interface ens192 (vNIC2):
 
 ![](2019-10-24-23-39-31.png)
 
 
+### Tier 1 Service Interfaces  Configuration
+(_**Networking  -> Tier1 Gateway -> "Service Interfaces" Add**_)
 
-A new _**overlay**_ segment, named as ****"K8Ss-management"** is provisioned. Each K8S Node VM' s vNIC1 (ens160) will be connected to this logical switch/segment. K8S Master Node and Worker Nodes will be communicating with each other through this logicalsegment. K8S Nodes will also check the liveness/readiness of the K8S PODs through this network/ens160(vNIC1)
+A new Service Interfaces is provisioned on the Tier 1 Logical Router. This interface is connected to the overlay logical switch/segment provisioned in the previous step. (Logical Switch : "k8s-management")
 
-![](2019-10-24-23-45-06.png)
+![](2019-10-25-05-33-34.png)
 
+We need to provid IP address for this manement interface.  
 
-On the CentOS the same concpet apply.  
-we have tow interfaces, this is example ofthe master:
-![](2019-10-24-23-41-59.png)
+![](2019-10-25-05-34-59.png)
 
-### Tier 1 Downlink Interface Configuration
-(_**Networking  -> Segment -> ""k8s-containers" Add**_)
-
-A new downlink interface is provisioned on the Tier 1 Logical Router. This interface is connected to the overlay logical switch/segment provisioned in the previous step. (Logical Switch : "k8s-containers")
-
-![](2019-10-24-23-49-53.png)
-
-### Route Advertisement on Tier 1 Logical Router
-(_**Advanced Networking & Security -> Networking -> Routers -> "T1-K8S-Node-Management" -> Routing -> Route Advertisement**_)
+### Route Advertisement on Tier 1 Logical Gateway
+(_**Networking -> Tier0-Gateway -> "tier0" -> Routing -> Route Advertisement**_)
 
 Tier 0 logical router does _**NOT**_ magically get the Tier 1 Logical Router' s downlink interface' s subnet prefix. For this, "Route Advertisement" on Tier 1 should be properly configured. As shown below.
 
@@ -231,30 +269,9 @@ Tier 0 logical router does _**NOT**_ magically get the Tier 1 Logical Router' s 
 
 At this point Tier 0' s routing table should see  Tier 1's downlink interface prefix on its routing table. To check that, the user can SSH to the Edge Transport Node' s management IP address (192.168.110.37 in this case. You can check this by looking at Tier 0' s information tab in NSX GUI.) Once SSHed to Edge Transport Node, then in the CLI, perform "get logical-routers" command, and then perform "vrf <Tier 0 SR' s VRF ID> ", then "get route". The output should have a route with a next hop pointing to Tier 1' s uplink IP.
 
-# Tier 0 BGP Configuration
-[Back to Table of Contents](#Table-Of-Contents)
 
-* BGP neighborship : (_**Advanced Networking & Security -> Networking -> Routers -> "T0-K8S-Domain" -> Routing -> BGP**_)
 
-At this point Tier 0 run in Active/Active mode. We need to configured with BGP to dynamically announce the prefixes in the NSX domain to the physical network. Below are the BGP parameters used. Notice that "Local Address" is set to "All Uplinks" . This setting effectively enables BGP neighborship initiation on both Tier 0 Active and Tier 0 Active uplink interfaces.
 
-![](2019-10-24-23-54-09.png)
-
-* Route Redistribution to BGP : (_**Networking -> Tier0 Gateways -> "tier0" ->  Route Redistribution**_)
-At a minimum Tier 0 NAT, Tier 1 Downlink and Tier 1 LB VIP prefixes should be redistributed to BGP. This will be explained in upcoming chapters but just to quickly touch on it, Tier 0 NAT is needed for K8S Pods -> external access, Tier 1 Downlink is needed for external -> K8S Node access and Tier 1 LB VIP is needed for external -> K8S Services access.
-
-![](2019-10-24-23-56-40.png)
-
-# K8S Node Dataplane Connectivity
-[Back to Table of Contents](#Table-Of-Contents)
-
-* Create a Logical Switch/Segment for K8S Node VM Dataplane Connectivity : (_**Advanced Networking & Security -> Networking -> Switching -> Switches**_)
-
-* A seperate logical switch/segment will be used to connect the second vNIC (ens192) of each K8S Node VM. vNIC2 and this logical switch will be providing the transport medium for the K8S Pods (**NOT** nodes) to communicate with the infrastructure. This logical switch/segment is named as **"K8SNodeDataPlaneLS"** in this environment.
-
-![](2019-05-17-11-00-14.png)
-
-This logical switch/segment will **NOT** be connected to any Tier 0 or Tier 1 Logical Router. It will solely serve for the purpose of providing the transport for K8S Pods. This will be explained in the upcoming chapters.
 
 [Back to Table of Contents](#Table-Of-Contents)
 
