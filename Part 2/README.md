@@ -62,7 +62,8 @@ NCP container Image and the deployment yaml file (ncp-deployment.yaml) comes wit
 
 NSX Node Agent is also a container image that runs as an infrastructure Pod on all of the worker nodes in the Kubernetes cluster. **It is deployed as a K8S "DaemonSet"**.  A DaemonSet ensures that all or specific nodes run a copy of a Pod. When a node is added to the cluster, that node will have the respective Pod added to itself. More info on DaemonSet can be found [here](https://kubernetes.io/docs/concepts/workloads/controllers/daemonset/)
 
-NSX Node Agent Pod has three containers: 
+NSX Node Agent Pod has three containers:   
+
 ![](2019-10-25-06-32-27.png)
 
 
