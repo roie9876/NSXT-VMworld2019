@@ -700,21 +700,104 @@ Now we have 10 PORTs connected to this segments
 we can see the PODs name from NSX UI:  
 ![](2019-10-25-16-24-24.png)
 
-And we can see all the tags:  
+We can see all the K8s tags from the NSX UI:  
 ![](2019-10-25-16-25-44.png)
 
+
+The Load Balancer status before deploy new LB VIPs:
+![](2019-10-25-16-38-20.png)
+This is the default VIP created with the K8s cluster.
+
+Create new L4 Service Type LB with persistence IP
 <pre><code>
-cat frontend-svc.yaml  
+root > cat frontend-svc.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: frontend-total
+    service: frontend
+  name: frontend
+  namespace: acme
+spec:
+  ports:
+  - name: http-frontend
+    nodePort: 30807
+    port: 3000
+    protocol: TCP
+    targetPort: 3000
+  selector:
+    app: frontend-total
+    service: frontend
+  type: LoadBalancer
+  loadBalancerIP: 10.15.100.100
 </code></pre>  
 
+We expting the VIP IP address will be 10.15.100.100
 <pre><code>
-kubectl create -f frontend-svc.yaml  
+root > kubectl create -f frontend-svc.yaml
+service/frontend created
+root > kubectl get svc
+NAME            TYPE           CLUSTER-IP       EXTERNAL-IP     PORT(S)          AGE
+cart            ClusterIP      10.100.119.49    <none>          5000/TCP         22m
+cart-redis      ClusterIP      10.105.208.2     <none>          6379/TCP         22m
+catalog         ClusterIP      10.101.251.48    <none>          8082/TCP         22m
+catalog-mongo   ClusterIP      10.111.14.3      <none>          27017/TCP        22m
+frontend        LoadBalancer   10.105.235.195   10.15.100.100   3000:30807/TCP   9s
+order           ClusterIP      10.111.73.197    <none>          6000/TCP         22m
+order-mongo     ClusterIP      10.97.151.38     <none>          27017/TCP        22m
+payment         ClusterIP      10.103.128.200   <none>          9000/TCP         22m
+users           ClusterIP      10.106.44.10     <none>          8081/TCP         22m
+users-mongo     ClusterIP      10.104.246.186   <none>          27017/TCP        22m
+
 </code></pre>   
- 
+
+The as you can see the svc of the frontend has 10.15.100.100 with port 3000 as L4 entry.
+We can see the results of the new LB VIP in NSX UI:
+
+![](2019-10-25-16-43-50.png)
+
+
+
+We can see the server pool member from NSX UI:
+![](2019-10-25-16-44-44.png)
+
+
+Scale more frontend PODs to the acme app:
+
+<pre><code>
+root > kubectl scale --replicas=2 deployment frontend
+deployment.extensions/frontend scaled
+  
+</code></pre>   
+
+We can see that we now have 2 endpoint in the service pool: 
 <pre><code>  
-kubectl get svc  
+root > kubectl describe svc frontend
+Name:                     frontend
+Namespace:                acme
+Labels:                   app=frontend-total
+                          service=frontend
+Annotations:              ncp/internal_ip_for_policy: 100.64.128.5
+Selector:                 app=frontend-total,service=frontend
+Type:                     LoadBalancer
+IP:                       10.105.235.195
+IP:                       10.15.100.100
+LoadBalancer Ingress:     10.15.100.100
+Port:                     http-frontend  3000/TCP
+TargetPort:               3000/TCP
+NodePort:                 http-frontend  30807/TCP
+Endpoints:                10.19.2.12:3000,10.19.2.6:3000
+Session Affinity:         None
+External Traffic Policy:  Cluster
+Events:                   <none>
+ 
 </code></pre> 
 
+From NSX UI we can see we have new member in the server pool:
+![](2019-10-25-16-48-27.png)
 
+Test the acme application with the broswer:
+![](2019-10-25-16-49-19.png)
 
 
