@@ -645,7 +645,7 @@ Context "kubernetes-admin@kubernetes" modified.
  </code></pre>   
 
 
-Deploy the acme application:  
+# Deploy the acme application:  
 <pre><code>
 root > kubectl create -f acme_fitness.yaml
 secret/redis-pass created
@@ -708,6 +708,7 @@ The Load Balancer status before deploy new LB VIPs:
 ![](2019-10-25-16-38-20.png)
 This is the default VIP created with the K8s cluster.
 
+# L4 Load Balancer
 Create new L4 Service Type LB with persistence IP
 <pre><code>
 root > cat frontend-svc.yaml
@@ -800,4 +801,47 @@ From NSX UI we can see we have new member in the server pool:
 Test the acme application with the broswer:
 ![](2019-10-25-16-49-19.png)
 
+
+# L7 Ingress
+We can create L7 ingress for the frontend serice:  
+
+root > cat ingress.yaml
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: frontend
+spec:
+  rules:
+  - host: frontend.lab.local
+    http:
+      paths:
+      - path: /*
+        backend:
+          serviceName: frontend
+          servicePort: 3000
+root > kubectl create -f ingress.yaml
+ingress.extensions/frontend created
+root > kubectl describe ingress frontend
+Name:             frontend
+Namespace:        acme
+Address:          10.20.1.1
+Default backend:  default-http-backend:80 (<none>)
+Rules:
+  Host                Path  Backends
+  ----                ----  --------
+  frontend.lab.local
+                      /*   frontend:3000 (10.19.2.12:3000,10.19.2.6:3000)
+Annotations:
+  ncp/internal_ip_for_policy:  100.64.128.5
+Events:                        <none>
+
+In the NSX-T LB we can can see the L7 rule:  
+The rule created in the **Request Forwarding Phase**
+![](2019-10-25-17-16-21.png)
+
+We can view the re-write rule from the UI:  
+
+![](2019-10-25-17-17-48.png)
+
+As you can see the frontend.lab.local send to frontend pool
 
