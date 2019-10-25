@@ -220,7 +220,7 @@ The only things that we need to do is configure one yaml file name ncp-ubuntu.ya
 ![](2019-10-25-11-33-56.png)
 
 example of thee original file (before we modiey it) can be found in this link:
-[here](https://github/roie9876/ncp-ubuntu.yaml)
+[here](https://github.com/roie9876/NSXT-VMworld2019/blob/master/Part%204/ncp-ubuntu.yaml)
 
 We now start to explain the diffrent filed of this file
 
