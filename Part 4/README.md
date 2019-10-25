@@ -541,271 +541,34 @@ New Tier1 LOGICAL Gateway:
 
 
 Connected to this Tier1 logical router we have the following Segnets: 
+![](2019-10-25-13-32-51.png)
+
+SNAT Rules
+![](2019-10-25-13-35-26.png)
 
 
-SNAT Pool
-![](2019-06-03_20-41-55.png)
-
-SNAT RULES
-![](2019-06-03_20-39-59.png)
-
-LOAD BALANCER
-![](2019-06-03_20-40-28.png)
+LOAD BALANCER runing on the same Tier1 created to the k8scluster
+![](2019-10-25-13-36-48.png)
 
 VIRTUAL SERVERS for INGRESS on LOAD BALANCER
-![](2019-06-03_20-40-40.png)
+![](2019-10-25-13-38-26.png)
 
 FIREWALL RULEBASE
-![](2019-06-03_20-43-42.png)
+![](2019-10-25-13-38-57.png)
 
-Notice also that CoreDNS pods are still in ContainerCreating phase, the reason for that is NSX Node Agent (which is responsible for connecting the pods to a logical switch) is still not installed on K8S Worker Nodes yet (next step)
-
-# NSX Node Agent Installation
-[Back to Table of Contents](#Table-Of-Contents)
- 
-"nsx-node-agent-ds.yml" will be used to deploy NSX Node Agent. This yml file is also provided in the content of the NSX Container Plugin zip file that was downloaded from My.VMware portal. 
-
-This yml file also contains a configmap for the configuration of the ncp.ini file for the NSX Node Agent. The "nsx-node-agent-ds.yml" file can simply be edited with a text editor.  The following parameters need to be configured :
-
-**apiserver_host_ip = 10.190.5.10** , **apiserver_host_port = 6443** : These parameters are for NSX Node Agent to access K8S API.
-
- **"#" is removed from the line with "serviceAccountname:..." so that role based access control can properly be applied for NSX Node Agent as well.**
-
-The edited yml file, "nsx-node-agent-ds-custom.yml" in this case, can now be deployed from anywhere. In this environment this yml file is copied to /home/vmware folder in K8S Master Node and deployed in the "nsx-system" namespace with the following command.
-
+Notice also that CoreDNS pods are changed thier status to Running state.  
 <pre><code>
-root@k8s-master:/home/vmware# <b>kubectl create -f nsx-node-agent-ds-custom.yml --namespace=nsx-system</b>
-</code></pre>
-
-As NSX Node Agent is deployed as a deamonset it will be running on each worker node in the K8S cluster.
-
-<pre><code>
-root@k8s-master:/home/vmware# <b>kubectl get pods --all-namespaces -o wide</b>
-NAMESPACE     NAME                                 READY   STATUS              RESTARTS   AGE     IP            NODE         NOMINATED NODE   READINESS GATES
-kube-system   coredns-fb8b8dccf-b592z              0/1     ContainerCreating   0          6h      <none>        k8s-master   <none>           <none>
-kube-system   coredns-fb8b8dccf-j66fg              0/1     ContainerCreating   0          6h      <none>        k8s-master   <none>           <none>
-kube-system   etcd-k8s-master                      1/1     Running             0          5h59m   10.190.5.10   k8s-master   <none>           <none>
-kube-system   kube-apiserver-k8s-master            1/1     Running             0          5h59m   10.190.5.10   k8s-master   <none>           <none>
-kube-system   kube-controller-manager-k8s-master   1/1     Running             0          5h59m   10.190.5.10   k8s-master   <none>           <none>
-kube-system   kube-proxy-bk7rs                     1/1     Running             0          112m    10.190.5.12   k8s-node2    <none>           <none>
-kube-system   kube-proxy-j4p5f                     1/1     Running             0          6h      10.190.5.10   k8s-master   <none>           <none>
-kube-system   kube-proxy-mkm4w                     1/1     Running             0          137m    10.190.5.11   k8s-node1    <none>           <none>
-kube-system   kube-scheduler-k8s-master            1/1     Running             0          5h59m   10.190.5.10   k8s-master   <none>           <none>
-nsx-system    nsx-ncp-7f65bbf6f6-mr29b             1/1     Running             0          14m     10.190.5.12   k8s-node2    <none>           <none>
-nsx-system    <b>nsx-node-agent-2tjb7</b>                 2/2     Running             0          24s     10.190.5.12   <b>k8s-node2</b>    <none>           <none>
-nsx-system    <b>nsx-node-agent-nqwgx</b>                 2/2     Running             0          24s     10.190.5.11   <b>k8s-node1</b>    <none>           <none>
-root@k8s-master:/home/vmware#
-</code></pre>
-
-**Note :** "-o wide" provides which Pod <=> Node mapping in the output
-
-Notice yet again the coredns pods are still in ContainerCreating state. At this stage simply delete those two coredns pods and K8S scheduler will recreate those two pods and both of them will be successfully get attached to the respective overlay network on NSX-T side.
-
-<pre><code>
-root@k8s-master:/home/vmware# <b>kubectl delete pod/coredns-fb8b8dccf-b592z --namespace=kube-system</b>
-pod "coredns-fb8b8dccf-b592z" deleted
-root@k8s-master:/home/vmware# <b>kubectl delete pod/coredns-fb8b8dccf-j66fg --namespace=kube-system</b>
-pod "coredns-fb8b8dccf-j66fg" deleted
-root@k8s-master:/home/vmware# <b>kubectl get pods --all-namespaces -o wide</b>
-NAMESPACE     NAME                                 READY   STATUS    RESTARTS   AGE     IP            NODE         NOMINATED NODE   READINESS GATES
-kube-system   <b>coredns-fb8b8dccf-fhn6q</b>              1/1     Running   0          3m40s   <b>172.25.4.4</b>    k8s-node1    <none>           <none>
-kube-system   <b>coredns-fb8b8dccf-wqndw</b>              1/1     Running   0          88s     <b>172.25.4.3</b>    k8s-node2    <none>           <none>
-kube-system   etcd-k8s-master                      1/1     Running   0          6h4m    10.190.5.10   k8s-master   <none>           <none>
-kube-system   kube-apiserver-k8s-master            1/1     Running   0          6h4m    10.190.5.10   k8s-master   <none>           <none>
-kube-system   kube-controller-manager-k8s-master   1/1     Running   0          6h4m    10.190.5.10   k8s-master   <none>           <none>
-kube-system   kube-proxy-bk7rs                     1/1     Running   0          117m    10.190.5.12   k8s-node2    <none>           <none>
-kube-system   kube-proxy-j4p5f                     1/1     Running   0          6h5m    10.190.5.10   k8s-master   <none>           <none>
-kube-system   kube-proxy-mkm4w                     1/1     Running   0          142m    10.190.5.11   k8s-node1    <none>           <none>
-kube-system   kube-scheduler-k8s-master            1/1     Running   0          6h4m    10.190.5.10   k8s-master   <none>           <none>
-nsx-system    nsx-ncp-7f65bbf6f6-mr29b             1/1     Running   0          20m     10.190.5.12   k8s-node2    <none>           <none>
-nsx-system    nsx-node-agent-2tjb7                 2/2     Running   0          5m35s   10.190.5.12   k8s-node2    <none>           <none>
-nsx-system    nsx-node-agent-nqwgx                 2/2     Running   0          5m35s   10.190.5.11   k8s-node1    <none>           <none>
-root@k8s-master:/home/vmware#
-</code></pre>
-
-At this stage the topology looks like this 
-
-![](2019-06-04_00-38-29.jpg)
-
-# Test Workload Deployment
-[Back to Table of Contents](#Table-Of-Contents)
-
-Let' s create a new namespace 
-
-<pre><code>
-root@k8s-master:/home/vmware# <b>kubectl create namespace demons</b>
-namespace/demons created
-root@k8s-master:/home/vmware#
-</code></pre>
-
-A new logical switch is created for "demons" namespace , shown below
-![](2019-06-04_01-06-11.jpg)
-
-NCP not only creates the above constructs but also tags them with the appropriate metadata, shown below 
-
-![](2019-06-04_01-26-26.jpg)
-
-For instance, in the above output , "project id" is the "UUID" for the "demons" K8S namespace. Which can be verified as below : 
-
-<pre><code>
-root@k8s-master:/home/vmware# <b>kubectl get ns demons -o yaml</b>
-apiVersion: v1
-kind: Namespace
-metadata:
-  creationTimestamp: "2019-06-03T23:54:01Z"
-  name: demons
-  resourceVersion: "773201"
-  selfLink: /api/v1/namespaces/demons
-  <b>uid: dcb423b5-865a-11e9-a2fc-005056b42e41</b>
-spec:
-  finalizers:
-  - kubernetes
-status:
-  phase: Active
-</code></pre>
-
-A new logical router is also created for "demons" namespace, shown below
-![](2019-06-04_01-09-52.jpg)
-
-A new IP Pool is also allocated from K8S-POD-IP-BLOCK, shown below
-![](2019-06-04_01-22-20.jpg)
-
-IP Pool allocated for the namespace is also tagged with metadata, shown below
-![](2019-06-04_01-24-11.jpg)
-
-An SNAT IP is allocated from the K8S-NAT-Pool (for all the Pods in demons namespace) , and the respective NAT rule is automatically configured on Tier 0 Logical Router (T0-K8S-Domain)
-
-![](2019-06-04_02-17-44.jpg)
-
-Deploy a sample app in the namespace (in imperative way)
-
-<pre><code>
-root@k8s-master:/home/vmware# <b>kubectl run nsxtestapp --image=dumlutimuralp/nsx-demo --replicas=2 --namespace=demons</b>
-kubectl run --generator=deployment/apps.v1 is DEPRECATED and will be removed in a future version. Use kubectl run --generator=run-pod/v1 or kubectl create instead.
-<b>deployment.apps/nsxtestapp created</b>
-root@k8s-master:/home/vmware# 
-</code></pre>
-
-Note : Notice the message in the output. K8S is recommending declerative way of implementing pods. 
-
-Verify that the Pods are created and allocated IPs from the appropriate IP pool
-
-<pre><code>
-root@k8s-master:/home/vmware# <b>kubectl get pods -o wide --namespace=demons</b>
-NAME                         READY   STATUS    RESTARTS   AGE   IP           NODE        NOMINATED NODE   READINESS GATES
-nsxtestapp-5bfcc97b5-n5wbz   1/1     Running   0          11m   172.25.5.3   k8s-node2   <none>           <none>
-nsxtestapp-5bfcc97b5-ppkqd   1/1     Running   0          11m   172.25.5.2   k8s-node1   <none>           <none>
-root@k8s-master:/home/vmware#
-</code></pre>
-
-Now the topology looks like below 
-
-![](2019-06-04_02-11-28.jpg)
-
-The logical port for each Pod shows up in NSX-T UI, shown below
-
-![](2019-06-04_01-44-12.jpg)
-
-Let' s look at the tags that are associated with that logical port as metadata
-
-![](2019-06-04_01-44-40.jpg)
-
-As shown above, the K8S namespace name, K8S Pod name and UUID (can be verified on K8S below) are carried over to NSX-T as metadata.
-
-<pre><code>
-root@k8s-master:/home/vmware# <b>kubectl get pod/nsxtestapp-5bfcc97b5-n5wbz -o yaml --namespace=demons</b>
-apiVersion: v1
-kind: Pod
-metadata:
-  creationTimestamp: "2019-06-04T00:23:32Z"
-  generateName: nsxtestapp-5bfcc97b5-
-  labels:
-    pod-template-hash: 5bfcc97b5
-    run: nsxtestapp
-  name: nsxtestapp-5bfcc97b5-n5wbz
-  namespace: demons
-|
-|
-Output Omitted
-|
-|
-  resourceVersion: "776038"
-  selfLink: /api/v1/namespaces/demons/pods/nsxtestapp-5bfcc97b5-n5wbz
-  uid: <b>fc30d02f-865e-11e9-a2fc-005056b42e41</b>
-spec:
-  containers:
-  - image: dumlutimuralp/nsx-demo
-    imagePullPolicy: Always
-    name: nsxtestapp
-|
-|
-Output Omitted
-|
-|
-</code></pre>
-
-
-Finally let' s check the IP connectivity of the Pod to the resources external to NSX domain.
-
-Perform the command below to get a shell in one of the Pods
-
-<pre><code>
-root@k8s-master:/home/vmware# <b>kubectl exec -it nsxtestapp-5bfcc97b5-n5wbz /bin/bash --namespace=demons</b>
-root@nsxtestapp-5bfcc97b5-n5wbz:/app# 
-</code></pre>
-
-Check the IP address of the Pod
-
-<pre><code>
-root@nsxtestapp-5bfcc97b5-n5wbz:/app# <b>ip addr</b>
-1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1
-    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
-    inet 127.0.0.1/8 scope host lo
-       valid_lft forever preferred_lft forever
-2: ovs-gretap0@NONE: <BROADCAST,MULTICAST> mtu 1462 qdisc noop state DOWN group default qlen 1000
-    link/ether 00:00:00:00:00:00 brd ff:ff:ff:ff:ff:ff
-3: erspan0@NONE: <BROADCAST,MULTICAST> mtu 1450 qdisc noop state DOWN group default qlen 1000
-    link/ether 36:89:34:84:cd:91 brd ff:ff:ff:ff:ff:ff
-4: gre0@NONE: <NOARP> mtu 1476 qdisc noop state DOWN group default qlen 1
-    link/gre 0.0.0.0 brd 0.0.0.0
-5: ovs-ip6gre0@NONE: <NOARP> mtu 1448 qdisc noop state DOWN group default qlen 1
-    link/gre6 00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00 brd 00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00
-6: ovs-ip6tnl0@NONE: <NOARP> mtu 1452 qdisc noop state DOWN group default qlen 1
-    link/tunnel6 :: brd ::
-50: eth0@if51: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default qlen 1000
-    link/ether 02:50:56:00:28:03 brd ff:ff:ff:ff:ff:ff
- inet <b>172.25.5.3/24</b> scope global eth0
-       valid_lft forever preferred_lft forever
-root@nsxtestapp-5bfcc97b5-n5wbz:/app# 
-</code></pre>
-
-Ping the external physical router from the Pod
-
-<pre><code>
-root@nsxtestapp-5bfcc97b5-n5wbz:/app# <b>ping 10.190.4.1</b>
-PING 10.190.4.1 (10.190.4.1): 56 data bytes
-64 bytes from 10.190.4.1: icmp_seq=0 ttl=62 time=3.047 ms
-64 bytes from 10.190.4.1: icmp_seq=1 ttl=62 time=1.534 ms
-64 bytes from 10.190.4.1: icmp_seq=2 ttl=62 time=1.130 ms
-64 bytes from 10.190.4.1: icmp_seq=3 ttl=62 time=1.044 ms
-64 bytes from 10.190.4.1: icmp_seq=4 ttl=62 time=1.957 ms
-64 bytes from 10.190.4.1: icmp_seq=5 ttl=62 time=1.417 ms
-^C--- 10.190.4.1 ping statistics ---
-6 packets transmitted, 6 packets received, 0% packet loss
-round-trip min/avg/max/stddev = 1.044/1.688/3.047/0.676 ms
-root@nsxtestapp-5bfcc97b5-n5wbz:/app#
-</code></pre>
-
-
-To identify containers per K8S Node, the logical port that the K8S Worker Node' s vNIC2 is connected to can be investigated too. Shown below.
-
-![](2019-06-05_22-51-43.png)
-
-Container ports show up as below.
-
-![](2019-06-05_22-53-16.png)
-
-
+root@master:/home/localadmin# kubectl get pod -n kube-system
+NAME                             READY   STATUS    RESTARTS   AGE
+coredns-584795fc57-5wvll         1/1     Running   1          3d20h
+coredns-584795fc57-pmgl5         1/1     Running   1          3d20h
+etcd-master                      1/1     Running   0          4d5h
+kube-apiserver-master            1/1     Running   0          4d5h
+kube-controller-manager-master   1/1     Running   0          4d5h
+kube-proxy-vpgfq                 1/1     Running   0          4d5h
+kube-proxy-zlc9f                 1/1     Running   0          4d5h
+kube-scheduler-master            1/1     Running   0          4d5h
+</code></pre> 
 
 
 
