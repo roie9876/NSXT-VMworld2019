@@ -351,6 +351,184 @@ nsx-node-agent-hwqm6       3/3     Running    0          14s
 nsx-node-agent-x2ndb       3/3     Running    0          14s
 </code></pre> 
 
+After few min the boostrap pod install the: node-agent, kube-proxy , and OVS on all masters and workers.
+then the nsx-system will be look like this:
+
+<pre><code>
+root@master:/home/localadmin# kubectl get pod -n nsx-system
+NAME                       READY   STATUS    RESTARTS   AGE
+nsx-ncp-848cc8c8ff-qzmb8   1/1     Running   0          25m
+nsx-ncp-bootstrap-552hh    1/1     Running   0          25m
+nsx-ncp-bootstrap-5t8jv    1/1     Running   0          25m
+nsx-ncp-bootstrap-mncpl    1/1     Running   0          25m
+nsx-node-agent-fr86l       3/3     Running   0          25m
+nsx-node-agent-hwqm6       3/3     Running   0          25m
+nsx-node-agent-x2ndb       3/3     Running   0          25m
+
+</code></pre> 
+
+we can take a look what containers run inside the nsx-node-agent:
+
+<pre><code>
+root@master:/home/localadmin# kubectl describe pod nsx-node-agent-x2ndb -n nsx-system
+Name:               nsx-node-agent-x2ndb
+Namespace:          nsx-system
+Priority:           0
+PriorityClassName:  <none>
+Node:               master/192.168.110.70
+Start Time:         Fri, 25 Oct 2019 12:59:40 +0300
+Labels:             component=nsx-node-agent
+                    controller-revision-hash=7cb5bc85d9
+                    pod-template-generation=1
+                    tier=nsx-networking
+                    version=v1
+Annotations:        container.apparmor.security.beta.kubernetes.io/nsx-node-agent: localhost/node-agent-apparmor
+Status:             Running
+IP:                 192.168.110.70
+Controlled By:      DaemonSet/nsx-node-agent
+Containers:
+  nsx-node-agent:
+    Container ID:  docker://9d583acd20699e4731aa2c0188f9cec085c782c632fcfe111370adfe20555c53
+    Image:         nsx-ncp
+    Image ID:      docker://sha256:40aae9a4aeda247a15d278a844a77cb0cd4361d63e4ce869d2969099ef27f264
+    Port:          <none>
+    Host Port:     <none>
+    Command:
+      start_node_agent
+    State:          Running
+      Started:      Fri, 25 Oct 2019 12:59:41 +0300
+    Ready:          True
+    Restart Count:  0
+    Liveness:       exec [/bin/sh -c timeout 5 check_pod_liveness nsx-node-agent] delay=5s timeout=5s period=10s #success=1 #failure=5
+    Environment:    <none>
+    Mounts:
+      /etc/nsx-ujo/ncp.ini from config-volume (ro,path="ncp.ini")
+      /host/proc from proc (ro)
+      /var/run/netns from netns (rw)
+      /var/run/nsx-ujo from cni-sock (rw)
+      /var/run/openvswitch from openvswitch (rw)
+      /var/run/secrets/kubernetes.io/serviceaccount from nsx-node-agent-svc-account-token-46kbd (ro)
+  nsx-kube-proxy:
+    Container ID:  docker://292992ba9c613d85ff5020bcb24ecb11bb34c00808ca29436a6f6e3cefa9c456
+    Image:         nsx-ncp
+    Image ID:      docker://sha256:40aae9a4aeda247a15d278a844a77cb0cd4361d63e4ce869d2969099ef27f264
+    Port:          <none>
+    Host Port:     <none>
+    Command:
+      start_kube_proxy
+    State:          Running
+      Started:      Fri, 25 Oct 2019 12:59:42 +0300
+    Ready:          True
+    Restart Count:  0
+    Liveness:       exec [/bin/sh -c timeout 5 check_pod_liveness nsx-kube-proxy] delay=5s timeout=1s period=5s #success=1 #failure=3
+    Environment:    <none>
+    Mounts:
+      /etc/nsx-ujo/ncp.ini from config-volume (ro,path="ncp.ini")
+      /var/run/openvswitch from openvswitch (rw)
+      /var/run/secrets/kubernetes.io/serviceaccount from nsx-node-agent-svc-account-token-46kbd (ro)
+  nsx-ovs:
+    Container ID:  docker://29650d44a6622a5306d4f79a95728f3b0f624550eb920d30d3469b74378fd876
+    Image:         nsx-ncp
+    Image ID:      docker://sha256:40aae9a4aeda247a15d278a844a77cb0cd4361d63e4ce869d2969099ef27f264
+    Port:          <none>
+    Host Port:     <none>
+    Command:
+      start_ovs
+    State:          Running
+      Started:      Fri, 25 Oct 2019 12:59:43 +0300
+    Ready:          True
+    Restart Count:  0
+    Liveness:       exec [/bin/sh -c timeout 5 check_pod_liveness nsx-ovs] delay=5s timeout=1s period=5s #success=1 #failure=3
+    Environment:    <none>
+    Mounts:
+      /etc/nsx-ujo/ncp.ini from config-volume (ro,path="ncp.ini")
+      /etc/openvswitch from host-config-openvswitch (rw)
+      /host/etc/os-release from host-os-release (ro)
+      /lib/modules from host-modules (ro)
+      /sys from host-sys (ro)
+      /var/run/openvswitch from openvswitch (rw)
+      /var/run/secrets/kubernetes.io/serviceaccount from nsx-node-agent-svc-account-token-46kbd (ro)
+Conditions:
+  Type              Status
+  Initialized       True
+  Ready             True
+  ContainersReady   True
+  PodScheduled      True
+Volumes:
+  config-volume:
+    Type:      ConfigMap (a volume populated by a ConfigMap)
+    Name:      nsx-node-agent-config
+    Optional:  false
+  openvswitch:
+    Type:          HostPath (bare host directory volume)
+    Path:          /var/run/openvswitch
+    HostPathType:
+  cni-sock:
+    Type:          HostPath (bare host directory volume)
+    Path:          /var/run/nsx-ujo
+    HostPathType:
+  netns:
+    Type:          HostPath (bare host directory volume)
+    Path:          /var/run/netns
+    HostPathType:
+  proc:
+    Type:          HostPath (bare host directory volume)
+    Path:          /proc
+    HostPathType:
+  host-sys:
+    Type:          HostPath (bare host directory volume)
+    Path:          /sys
+    HostPathType:
+  host-modules:
+    Type:          HostPath (bare host directory volume)
+    Path:          /lib/modules
+    HostPathType:
+  host-config-openvswitch:
+    Type:          HostPath (bare host directory volume)
+    Path:          /etc/openvswitch
+    HostPathType:
+  host-os-release:
+    Type:          HostPath (bare host directory volume)
+    Path:          /etc/os-release
+    HostPathType:
+  nsx-node-agent-svc-account-token-46kbd:
+    Type:        Secret (a volume populated by a Secret)
+    SecretName:  nsx-node-agent-svc-account-token-46kbd
+    Optional:    false
+QoS Class:       BestEffort
+Node-Selectors:  <none>
+Tolerations:     node-role.kubernetes.io/master:NoSchedule
+                 node.kubernetes.io/disk-pressure:NoSchedule
+                 node.kubernetes.io/memory-pressure:NoSchedule
+                 node.kubernetes.io/network-unavailable:NoSchedule
+                 node.kubernetes.io/not-ready:NoSchedule
+                 node.kubernetes.io/not-ready:NoExecute
+                 node.kubernetes.io/pid-pressure:NoSchedule
+                 node.kubernetes.io/unreachable:NoSchedule
+                 node.kubernetes.io/unreachable:NoExecute
+                 node.kubernetes.io/unschedulable:NoSchedule
+Events:
+  Type     Reason     Age                From               Message
+  ----     ------     ----               ----               -------
+  Normal   Scheduled  26m                default-scheduler  Successfully assigned nsx-system/nsx-node-agent-x2ndb to master
+  Normal   Pulled     26m                kubelet, master    Container image "nsx-ncp" already present on machine
+  Normal   Created    26m                kubelet, master    Created container nsx-node-agent
+  Normal   Started    26m                kubelet, master    Started container nsx-node-agent
+  Normal   Pulled     26m                kubelet, master    Container image "nsx-ncp" already present on machine
+  Normal   Created    26m                kubelet, master    Created container nsx-kube-proxy
+  Normal   Started    26m                kubelet, master    Started container nsx-kube-proxy
+  Normal   Pulled     26m                kubelet, master    Container image "nsx-ncp" already present on machine
+  Normal   Created    26m                kubelet, master    Created container nsx-ovs
+  Normal   Started    26m                kubelet, master    Started container nsx-ovs
+  Warning  Unhealthy  26m (x2 over 26m)  kubelet, master    Liveness probe failed:
+
+</code></pre> 
+
+we have 3 container as explaind before:  
+*nsx-node-agent  
+*nsx-kube-proxy  
+*nsx-ovs
+
 
 
 **Notice the changes to the existing logical switches/segments, Tier 1 Logical Routers, Load Balancer below . All these newly created objects have been provisioned by NCP (as soon as NCP Pod has been successfully deployed) by identifying the  the K8S desired state and mapping the K8S resources in etcd to the NSX-T Logical Networking constructs.**
@@ -359,10 +537,11 @@ LOGICAL Segments
 ![](2019-10-25-13-05-38.png)
 
 New Tier1 LOGICAL Gateway:
+![](2019-10-25-13-28-37.png)
 
 
-IP POOLS per Namespace
-![](2019-06-03_21-06-24.png)
+Connected to this Tier1 logical router we have the following Segnets: 
+
 
 SNAT Pool
 ![](2019-06-03_20-41-55.png)
