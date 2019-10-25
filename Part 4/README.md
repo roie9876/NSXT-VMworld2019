@@ -572,12 +572,63 @@ kube-scheduler-master            1/1     Running   0          4d5h
 
 
 
+# Deploy the acme application
+Thie application contains a Polyglot demo application comprised of (presently) 6 microservices and 4 datastores:  
+
+![](2019-10-25-15-41-51.png)
+
+The contents here are the necessary YAML files to deploy the ACMEFIT application in a kubernetes cluster.
+
+This app is developed by team behind www.cloudjourney.io
+
+https://github.com/roie9876/acme_fitness_demo
+
+<pre><code>
+git clone https://github.com/roie9876/acme_fitness_demo
+</code></pre> 
 
 
 
+create acme  namespace, we can work with NAT namespace or No-NAT. lets create No-Nat. to do this we need to anotated the namespace.
 
+<pre><code>
+cat acme-no-nat.yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+   name: acme
+   annotations:
+      ncp/no_snat: "True"
+</code></pre> 
 
+<pre><code>
+kubectl create -f acme-no-nat.yaml 
+</code></pre>   
+  
+  
+<pre><code>
+kubectl config set-context --current --namespace=acme  
+</code></pre>   
+  
+<pre><code>
+kubectl create -f acme_fitness.yaml  
+</code></pre>    
 
+<pre><code>
+watch kubectl get pod  
+</code></pre>   
+
+<pre><code>
+cat frontend-svc.yaml  
+</code></pre>  
+
+<pre><code>
+kubectl create -f frontend-svc.yaml  
+</code></pre>   
+ 
+<pre><code>  
+kubectl get svc  
+</code></pre> 
 
 
 
