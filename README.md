@@ -73,5 +73,5 @@ Below articles focus on the management and data plane integration principles of 
 
 ### [Part 4](https://github.com/roie9876/NSXT-VMworld2019)
 
-* Current State
+* NCP and K8s cluster integration
 * NSX Container Plugin (NCP) Installation
