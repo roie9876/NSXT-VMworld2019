@@ -8,7 +8,7 @@
 [NSX Node Agent Installation](#NSX-Node-Agent-Installation)  
 [Test Workload Deployment](#Test-Workload-Deployment)
 
-# Current State
+# Current State before install and configure the NCP
 [Back to Table of Contents](#Table-Of-Contents)
 
 ## K8S Cluster
@@ -234,14 +234,30 @@ However, before moving forward, NSX-T specific environmental parameters need to 
 The "ncp-ubuntu.yml" file can simply be edited with a text editor. The parameters in the file that are used in this environment has "#" removed. Below is a list and explanation of each :
 
 staring with NCP 2.5 we can work with the policy API. with Policy API we need to defined the UUIDs of the objects.
-pay attendtion thet UUIDs of the policy API are diffrents then the UUIDs of the manager API.
+#### Note: The UUIDs of the policy API are diffrents then the UUIDs of the manager API.
 
-how we can find the IDs ? 
-with Chrome broser open developr  
+### how we can find the Policy UUID ? 
+With Chrome browser we need to open Developr Tools:  
+![](2019-10-25-12-21-36.png) 
+
+Click on the Ctrl + R to start record:  
+
+![](2019-10-25-12-22-31.png)  
+
+We can clear the screnn by the small icon ![](2019-10-25-12-23-01.png)  
+for example lets find the UUID of the K8s-LB-Pool: 
+We need to click on the NSX-T object that we would like to find his UUID:  
+
+
+There is small blue cirule refress button:  ![](2019-10-25-12-29-01.png) , Click on it and on the right new date will show up. as you can see in the image bellow the "id" : "k8s-LB-Poo" this is the object UUID.  
+  
+  ![](2019-10-25-12-25-42.png)  
+    
+
 
 **policy_nsxapi = True** : User to specify that NCP will work with the Policy API.  
 
-**single_tier_topology = True** : configure single tier1 per K8s/OpenShift Cluster. 
+**single_tier_topology = True** : configure single tier1 per K8s/OpenShift Cluster. starting with NCP 2.5 we have two options for the tier1. we can manualuy create this tier1 and specify his name in the ncp config file, or we can let ncp automaticly create this tier1. in this demo we want ncp to create this tier1 gateway. the name of tier1 taken from the **cluster =** paramters, in ouur demo its k8scluster.
 
 **cluster = k8scluster** : Used to identify the NSX-T objects that are provisioned for this K8S cluster. Notice that K8S Node logical ports in "K8s-Contaainers" are configured with the "k8scluster" tag and the "ncp/cluster" scope also with the hostname of Ubuntu node as the tag and "ncp/node_name" scope on NSX-T side.
 
