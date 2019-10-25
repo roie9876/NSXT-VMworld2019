@@ -694,8 +694,15 @@ users-mongo-7cfb97b5bb-mxhkc     1/1     Running   0          40s   10.19.2.10  
 As you can see, all the PODs get IPs from range 10.19.2.0/24
 
 We can see the reflections of the PODs in NSXT
-![](2019-10-25-16-20-59.png)
+![](2019-10-25-16-20-59.png)  
+
 Now we have 10 PORTs connected to this segments
+we can see the PODs name from NSX UI:  
+![](2019-10-25-16-24-24.png)
+
+And we can see all the tags:  
+![](2019-10-25-16-25-44.png)
+
 <pre><code>
 cat frontend-svc.yaml  
 </code></pre>  
