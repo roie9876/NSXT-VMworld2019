@@ -19,7 +19,16 @@ In my lab i deploy 7 VMs as fllows:
 
 ![](2019-10-26-07-36-26.png)
 
-My Host file:
+
+**In NCP version 2.5 and OpenShift integration we change the way the installation works. in the OpenShift host file we are not providing NSX configuration**
+
+In The SDN section we specify that we are Not Installaing OpenShift SDN and Not Installiong NSX SDN
+
+
+**openshift_use_openshift_sdn=false**  
+**openshift_use_nsx=false**
+
+Here is my complite OpenShift Host file:
 
 <pre><code>
 [OSEv3:children]
@@ -66,14 +75,67 @@ infra02.lab.local ansible_ssh_host=192.168.112.75 openshift_node_group_name='nod
 node01.lab.local ansible_ssh_host=192.168.112.76 openshift_node_group_name='node-config-compute'
 node02.lab.local ansible_ssh_host=192.168.112.77 openshift_node_group_name='node-config-compute'
 
+</code></pre>  
+
+Run on all node VMs:
+<pre><code>
+yum -y install wget git net-tools bind-utils yum-utils iptables-services bridge-utils bash-completion kexec-tools sos psacct
+yum -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+sed -i -e "s/^enabled=1/enabled=0/" /etc/yum.repos.d/epel.repo
+</code></pre>
+
+Run on the master nodes:
+
+
+<pre><code>
+ssh-copy-id -i ~/.ssh/id_rsa.pub master01
+ssh-copy-id -i ~/.ssh/id_rsa.pub master02
+ssh-copy-id -i ~/.ssh/id_rsa.pub master03
+ssh-copy-id -i ~/.ssh/id_rsa.pub node01
+ssh-copy-id -i ~/.ssh/id_rsa.pub node02
+ssh-copy-id -i ~/.ssh/id_rsa.pub infra01
+ssh-copy-id -i ~/.ssh/id_rsa.pub infra02
+ 
+yum -y --enablerepo=epel install ansible pyOpenSSL
+git clone https://github.com/openshift/openshift-ansible
+cd openshift-ansible/
+git checkout release-3.11
+cd
+ansible-playbook -i hosts openshift-ansible/playbooks/prerequisites.yml
+</code></pre>
+
+Use the NCP image for RHEL
+![](2019-10-26-07-46-31.png)
+
+
+Once the above playbook finish do the following on all nodes:
+<pre><code>
+docker load -i nsx-ncp-rhel-2.5.0.14628220.tar
+# Get the image name 
+docker images
+docker image tag registry.local/nsx-ncp-rhel-2.5.0.14628220.tar nsx-ncp
+</code></pre>
+
+Last step is to deploy the Openshift cluster:
+<pre><code>
+ansible-playbook -i hosts openshift-ansible/playbooks/deploy_cluster.yml
+</code></pre>
+
+
+When the deploy cluster ansible script finish we need to deploy the ncp-openshift.yaml
+
+The original un modifed ncp-openshift can be found here:
+
+
+<pre><code>
+
 </code></pre>
 
 The namespaces that are provisioned by default can be seen using the following kubectl command.
 
-<pre><code>
 
 
-</code></pre>
+
 
 
 <pre><code>
