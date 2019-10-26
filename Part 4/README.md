@@ -3,16 +3,17 @@
 
 # Table Of Contents
 
-[Deploy OpenShift Cluster](#Current-State)   
+[Current State](#Current-State)   
 [NSX Container Plugin (NCP) Installation with OpenShift](#NSX-Container-Plugin-Installation)  
 [Deploy sample Application](#Test-Workload-Deployment)
 
+# Current State before install and configure the NCP
+[Back to Table of Contents](#Table-Of-Contents)
 
+## Install OpenShift Cluster
 
-## Deploy OpenShift Cluster
-
-We deploy new OpenShift Cluster in version 3.11.  
-You can read very good blog post created by Yasen Simeonov:
+We need to new OpenShift Cluster in version 3.11. 
+You can read very good blog post created by Yasen Simeonov.
 https://blogs.vmware.com/networkvirtualization/2019/02/nsx-t-integration-with-openshift.html/ 
 
 In my lab i deploy 7 VMs as fllows:  
