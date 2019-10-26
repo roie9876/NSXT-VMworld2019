@@ -18,9 +18,9 @@ Previously in Part 3, K8S cluster has successfully been formed using kubeadm.
 <pre><code>
 root@master:/home/localadmin# kubectl get node
 NAME     STATUS   ROLES    AGE     VERSION
-master   Ready    master   2d22h   v1.14.2
-node01   Ready          <none>   2d22h   v1.14.2
-node02   Ready          <none>   2d18h   v1.14.2
+master   Ready    master   2d22h   v1.15.5
+node01   Ready          <none>   2d22h   v1.15.5
+node02   Ready          <none>   2d18h   v1.15.5
 
 </code></pre>
 
@@ -58,7 +58,7 @@ kube-system   kube-scheduler-master            1/1     Running             0    
 _**Notice "coredns-xxx" Pods are stuck in "ContainerCreating" phase, the reason is although kubelet agent on K8S worker Node sent a request to NSX-T CNI Plugin module to start provisioning the individual network interface for these Pods, since the NSX Node Agent is not installed on the K8S worker nodes yet (Nor the NSX Container Plugin for attaching NSX-T management plane to K8S API) , kubelet can not move forward with the Pod creation.**_
 
 
-We can learnd it from the description of the coredns pod:  
+We can learn it from the description of the coredns pod:  
 
 <pre><code>
 root@master:/home/localadmin# kubectl describe pod coredns-584795fc57-hwxrv  -n kube-system
@@ -214,8 +214,8 @@ k8s.gcr.io/pause                                                   3.1          
 ## Confiure the NCP for K8s Cluster 
 
 
-In NCP version 2.5 the process of installation and configuration of the NCP improved a lots by automated the all proecess.
-The only things that we need to do is configure one yaml file name ncp-ubuntu.yaml. we can find this file in the folder of the NCP installation. 
+In NCP version 2.5 the process of installation and configuration of the NCP improved a lot by automating it.
+The only thing that we need to do is configure one yaml file name ncp-ubuntu.yaml. we can find this file in the folder of the NCP installation. 
 
 ![](2019-10-25-11-33-56.png)
 
@@ -234,32 +234,32 @@ However, before moving forward, NSX-T specific environmental parameters need to 
 The "ncp-ubuntu.yml" file can simply be edited with a text editor. The parameters in the file that are used in this environment has "#" removed. Below is a list and explanation of each :
 
 staring with NCP 2.5 we can work with the policy API. with Policy API we need to defined the UUIDs of the objects.
-#### Note: The UUIDs of the policy API are diffrents then the UUIDs of the manager API.
+#### Note: The UUIDs of the policy API are differences then the UUIDs of the manager API.
 
 ### how we can find the Policy UUID ? 
-With Chrome browser we need to open Developr Tools:  
+With the Chrome browser, we need to use the  Developer Tools:  
 ![](2019-10-25-12-21-36.png) 
 
 Click on the Ctrl + R to start record:  
 
 ![](2019-10-25-12-22-31.png)  
 
-We can clear the screnn by the small icon ![](2019-10-25-12-23-01.png)  
+We can clear the screen by the small icon ![](2019-10-25-12-23-01.png)  
 for example lets find the UUID of the K8s-LB-Pool: 
 We need to click on the NSX-T object that we would like to find his UUID:  
 
 
-There is small blue cirule refress button:  ![](2019-10-25-12-29-01.png) , Click on it and on the right new date will show up. as you can see in the image bellow  
+There is a small blue circle refresh button:  ![](2019-10-25-12-29-01.png) , Click on it. New date will show up. as you can see in the image bellow  
 the **"id" : "k8s-LB-Poo"** this is the object UUID.  
   
   ![](2019-10-25-12-25-42.png)  
     
 
-now lets start to expalind the diffrent paramters:
+let's start to explain the different parameters:
 
-**policy_nsxapi = True** : User to specify that NCP will work with the Policy API.  
+**policy_nsxapi = True** : Specify that NCP will work with the Policy API.  
 
-**single_tier_topology = True** : configure single tier1 per K8s/OpenShift Cluster. starting with NCP 2.5 we have two options for the tier1. we can manualuy create this tier1 and specify his name in the ncp config file, or we can let ncp automaticly create this tier1. in this demo we want ncp to create this tier1 gateway. the name of tier1 taken from the **cluster =** paramters, in ouur demo its k8scluster.
+**single_tier_topology = True** : configure single tier1 per K8s/OpenShift Cluster. starting with NCP 2.5 we have two options for the tier1. we can manually create this tier1 and specify his name in the ncp config file, or we can let ncp automatically create this tier1. in this demo we want NCP to create this tier1 gateway. the name of tier1 taken from the **cluster =** parameters, in our demo its k8scluster.
 
 **cluster = k8scluster** : Used to identify the NSX-T objects that are provisioned for this K8S cluster. Notice that K8S Node logical ports in "K8s-Contaainers" are configured with the "k8scluster" tag and the "ncp/cluster" scope also with the hostname of Ubuntu node as the tag and "ncp/node_name" scope on NSX-T side.
 
@@ -268,7 +268,7 @@ now lets start to expalind the diffrent paramters:
 **apiserver_host_port = 6443** : These parameters are for NCP to access K8S API. **Note this parnter need to configured multiple times in this yaml file, so every time you this parmter you need to configure the same value**
   
 **apiserver_host_ip = 192.168.113.2**  
-This is the IP address of the master node, if we have clusters of k8s masters we nede to have LB with VIP address.  
+This is the IP address of the master node, if we have clusters of k8s masters we need to use the LB VIP.  
 **Note this paramter need to configured multiple times in this yaml file, so every time you this parmter you need to configure the same value**
 
 **ingress_mode = nat** : This parameter basically defines that NSX will use SNAT/DNAT rules for K8S ingress (L7 HTTPS/HTTP load balancing) to access the K8S service at the backend.
@@ -367,7 +367,7 @@ nsx-node-agent-x2ndb       3/3     Running   0          25m
 
 </code></pre> 
 
-we can take a look what containers run inside the nsx-node-agent:
+We can take a look which containers run inside the nsx-node-agent:
 
 <pre><code>
 root@master:/home/localadmin# kubectl describe pod nsx-node-agent-x2ndb -n nsx-system
@@ -524,7 +524,7 @@ Events:
 
 </code></pre> 
 
-we have 3 container as explaind before:  
+We have the 3 following containers:  
 *nsx-node-agent  
 *nsx-kube-proxy  
 *nsx-ovs
@@ -803,7 +803,7 @@ Test the acme application with the broswer:
 
 
 # L7 Ingress
-We can create L7 ingress for the frontend serice:  
+We can create L7 ingress for the frontend service:  
 
 root > cat ingress.yaml
 apiVersion: extensions/v1beta1
@@ -843,5 +843,5 @@ We can view the re-write rule from the UI:
 
 ![](2019-10-25-17-17-48.png)
 
-As you can see the frontend.lab.local send to frontend pool
+The user sends traffic to URL: frontend.lab.local which hit the L7 Ingress in NSX LB. Then the NSX LB re-write this request and sends it to the K8s frontend pool.
 
