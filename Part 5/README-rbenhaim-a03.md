@@ -315,49 +315,6 @@ In The Virtual Server (VIP) we have two L7 etnry:
 
 
 
-
-
-
-
-LOGICAL Segments  
-![](2019-10-25-13-05-38.png)
-
-New Tier1 LOGICAL Gateway:
-![](2019-10-25-13-28-37.png)
-
-
-Connected to this Tier1 logical router we have the following Segnets: 
-![](2019-10-25-13-32-51.png)
-
-SNAT Rules
-![](2019-10-25-13-35-26.png)
-
-
-LOAD BALANCER runing on the same Tier1 created to the k8scluster
-![](2019-10-25-13-36-48.png)
-
-VIRTUAL SERVERS for INGRESS on LOAD BALANCER
-![](2019-10-25-13-38-26.png)
-
-FIREWALL RULEBASE
-![](2019-10-25-13-38-57.png)
-
-Notice also that CoreDNS pods are changed thier status to Running state.  
-<pre><code>
-root@master:/home/localadmin# kubectl get pod -n kube-system
-NAME                             READY   STATUS    RESTARTS   AGE
-coredns-584795fc57-5wvll         1/1     Running   1          3d20h
-coredns-584795fc57-pmgl5         1/1     Running   1          3d20h
-etcd-master                      1/1     Running   0          4d5h
-kube-apiserver-master            1/1     Running   0          4d5h
-kube-controller-manager-master   1/1     Running   0          4d5h
-kube-proxy-vpgfq                 1/1     Running   0          4d5h
-kube-proxy-zlc9f                 1/1     Running   0          4d5h
-kube-scheduler-master            1/1     Running   0          4d5h
-</code></pre> 
-
-
-
 # Deploy the acme application
 Thie application contains a Polyglot demo application comprised of (presently) 6 microservices and 4 datastores:  
 
@@ -375,65 +332,39 @@ git clone https://github.com/roie9876/acme_fitness_demo
 
 
 
-create acme  namespace, we can work with NAT namespace or No-NAT. lets create No-Nat. to do this we need to anotated the namespace.
+create acme  project, we can work with NAT namespace or No-NAT. 
+lets create it with NAT (this is the default). 
+
 
 <pre><code>
-cat acme-no-nat.yaml
-apiVersion: v1
-kind: Namespace
-metadata:
-   name: acme
-   annotations:
-      ncp/no_snat: "True"
+[root@master01 home]# oc new-project acme
+Already on project "acme" on server "https://master01.lab.local:8443".
+
+You can add applications to this project with the 'new-app' command. For example, try:
+
+    oc new-app centos/ruby-25-centos7~https://github.com/sclorg/ruby-ex.git
+
+to build a new example application in Ruby.
+
 </code></pre> 
 
-<pre><code>
-root > cat acme-no-nat.yaml
-apiVersion: v1
-kind: Namespace
-metadata:
-   name: acme
-   annotations:
-      ncp/no_snat: "True"
-root > kubectl create -f acme-no-nat.yaml
-namespace/acme created  
-  
 
-root > kubectl describe ns acme
-Name:         acme
-Labels:       <none>
-Annotations:  ncp/no_snat: True
-Status:       Active
-
-No resource quota.
-
-No resource limits.
-
-</code></pre>   
-
-We can see the results of the new namespace in NSX Segments, we have new Segment with the name: seg-k8cluster-acme-0.  
+We can see the results of the new project in NSX Segments, we have new Segment with the name: seg-openshift-acme-0.  
 In the PORTS we have 0 Connected PODs (we didn't deploy any PODs yet...)
 
-![](2019-10-25-16-13-36.png)
+![](2019-10-26-10-41-21.png)
 
-NSXT curve new CIDR 10.19.2.0/24 where the 10.19.2.1 is the default Gateway for this namespce 
-![](2019-10-25-16-16-03.png)
+NSXT curve new CIDR 10.11.10.0/24 where the 10.11.10.1 is the default Gateway for this namespce 
+![](2019-10-26-10-42-19.png)
 
 We can chekc if we have NCP create NAT rule for this namespace:  
 As you can see there is no any ANT entry for 10.19.2.0/42
 ![](2019-10-25-16-17-39.png)
 
 
-Lets change the default namespace to acme:
-<pre><code>
-root > kubectl config set-context --current --namespace=acme
-Context "kubernetes-admin@kubernetes" modified.
- </code></pre>   
-
-
 # Deploy the acme application:  
 <pre><code>
-root > kubectl create -f acme_fitness.yaml
+[root@master01 home]# oc create -f acme_fitness_demo/kubernetes-manifests/acme_fitness.yaml
 secret/redis-pass created
 secret/catalog-mongo-pass created
 secret/order-mongo-pass created
@@ -459,35 +390,37 @@ service/users-mongo created
 deployment.apps/users-mongo created
 service/users created
 deployment.apps/users created
+
  </code></pre>    
 
 
 <pre><code>
-root > kubectl get pod -o wide
-NAME                             READY   STATUS    RESTARTS   AGE   IP           NODE     NOMINATED NODE   READINESS GATES
-cart-6d84f4cf64-ftlbp            1/1     Running   0          42s   10.19.2.4    node02   <none>           <none>
-cart-redis-7fcdbcd8d8-848rx      1/1     Running   0          42s   10.19.2.5    node02   <none>           <none>
-catalog-587f7df8c8-7bxst         1/1     Running   0          41s   10.19.2.2    node02   <none>           <none>
-catalog-mongo-5c8db99954-l2plp   1/1     Running   0          41s   10.19.2.3    node02   <none>           <none>
-frontend-7557468545-9gzb2        1/1     Running   0          41s   10.19.2.6    node02   <none>           <none>
-order-c8885777b-kjdf7            1/1     Running   0          41s   10.19.2.8    node02   <none>           <none>
-order-mongo-7cc8f784f8-tl29b     1/1     Running   0          41s   10.19.2.7    node02   <none>           <none>
-payment-79bc456ff-cxprm          1/1     Running   0          40s   10.19.2.9    node02   <none>           <none>
-users-6d7c5dd7c8-t6jmc           1/1     Running   0          40s   10.19.2.11   node02   <none>           <none>
-users-mongo-7cfb97b5bb-mxhkc     1/1     Running   0          40s   10.19.2.10   node02   <none>           <none>
+[root@master01 home]# oc get pod -o wide
+NAME                             READY     STATUS    RESTARTS   AGE       IP            NODE                 NOMINATED NODE
+cart-74868657bd-f58fx            1/1       Running   0          23s       10.11.10.2    infra01.lab.local    <none>
+cart-redis-8548895c64-5j4db      1/1       Running   0          23s       10.11.10.3    node01.lab.local     <none>
+catalog-5d86b4447d-q88qq         1/1       Running   0          22s       10.11.10.4    infra01.lab.local    <none>
+catalog-mongo-5f7f9b97cb-v6m69   1/1       Running   0          22s       10.11.10.7    infra01.lab.local    <none>
+frontend-76b454779c-scg8k        1/1       Running   0          22s       10.11.10.5    node02.lab.local     <none>
+order-f59554484-q7cjw            1/1       Running   0          22s       10.11.10.6    node02.lab.local     <none>
+order-mongo-84d55494dd-7b5ft     1/1       Running   0          22s       10.11.10.8    infra02.lab.local    <none>
+payment-77d6776ddc-2s9lq         1/1       Running   0          22s       10.11.10.9    node01.lab.local     <none>
+users-d5856777d-9f4ng            1/1       Running   0          21s       10.11.10.11   node01.lab.local     <none>
+users-mongo-647bd448b-qkqsp      1/1       Running   0          21s       10.11.10.10   master01.lab.local   <none>
+
   
 </code></pre>   
-As you can see, all the PODs get IPs from range 10.19.2.0/24
+As you can see, all the PODs get IPs from range 10.11.10.0/24
 
 We can see the reflections of the PODs in NSXT
-![](2019-10-25-16-20-59.png)  
+![](2019-10-26-10-46-46.png)
 
 Now we have 10 PORTs connected to this segments
 we can see the PODs name from NSX UI:  
-![](2019-10-25-16-24-24.png)
+![](2019-10-26-10-47-06.png)
 
 We can see all the K8s tags from the NSX UI:  
-![](2019-10-25-16-25-44.png)
+![](2019-10-26-10-47-36.png)
 
 
 The Load Balancer status before deploy new LB VIPs:
