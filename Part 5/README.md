@@ -104,17 +104,6 @@ cd
 ansible-playbook -i hosts openshift-ansible/playbooks/prerequisites.yml
 </code></pre>
 
-Use the NCP image for RHEL
-![](2019-10-26-07-46-31.png)
-
-
-Once the above playbook finish do the following on all nodes:
-<pre><code>
-docker load -i nsx-ncp-rhel-2.5.0.14628220.tar
-# Get the image name 
-docker images
-docker image tag registry.local/nsx-ncp-rhel-2.5.0.14628220.tar nsx-ncp
-</code></pre>
 
 Last step is to deploy the Openshift cluster:
 <pre><code>
@@ -122,50 +111,37 @@ ansible-playbook -i hosts openshift-ansible/playbooks/deploy_cluster.yml
 </code></pre>
 
 
-When the deploy cluster ansible script finish we need to deploy the ncp-openshift.yaml
-
-The original un modifed ncp-openshift can be found here:
-
-
 <pre><code>
-
-</code></pre>
-
-The namespaces that are provisioned by default can be seen using the following kubectl command.
-
-
-
-
-
-
-<pre><code>
-
-</code></pre>
-
-_**Notice "coredns-xxx" Pods are stuck in "ContainerCreating" phase, the reason is although kubelet agent on K8S worker Node sent a request to NSX-T CNI Plugin module to start provisioning the individual network interface for these Pods, since the NSX Node Agent is not installed on the K8S worker nodes yet (Nor the NSX Container Plugin for attaching NSX-T management plane to K8S API) , kubelet can not move forward with the Pod creation.**_
-
-
-We can learn it from the description of the coredns pod:  
-
-<pre><code>
-
+[root@master01 kubernetes-manifests]# oc get node
+NAME                 STATUS    ROLES            AGE       VERSION
+infra01.lab.local    Ready     compute,infra    6d        v1.11.0+d4cacc0
+infra02.lab.local    Ready     compute,infra    6d        v1.11.0+d4cacc0
+master01.lab.local   Ready     compute,master   6d        v1.11.0+d4cacc0
+master02.lab.local   Ready     compute,master   6d        v1.11.0+d4cacc0
+master03.lab.local   Ready     compute,master   6d        v1.11.0+d4cacc0
+node01.lab.local     Ready     compute          6d        v1.11.0+d4cacc0
+node02.lab.local     Ready     compute          6d        v1.11.0+d4cacc0
 </code></pre>
 
 
+When the deploy cluster ansible script finish there is no function SDN in the cluster.  
+We need to deploy the ncp-openshift.yaml
 
+The original unmodified ncp-openshift can be found here:
+https://github.com/roie9876/NSXT-VMworld2019/blob/master/Part%205/ncp-openshift.yaml
 
 
 
 # NSX Container Plugin Installation
 [Back to Table of Contents](#Table-Of-Contents)
 
-Once again, NSX Container Plugin (NCP) image file is in the NSX container folder that was copied to each K8S node will be used in this section. 
+NSX Container Plugin (NCP) image file need to be copy to all masters and workers.  
 
-## Load The Docker Image for NSX NCP (and NSX Node Agent) on K8S Nodes
+## Load The Docker Image for NSX NCP on all masters and workers:
 
 For the commands below, "sudo" can be used with each command or privilege can be escalated to root by using "sudo -H bash" in advance.
 
-On each K8S node, navigate to "/home/vmware/nsx-container-2.4.1.13515827/Kubernetes" folder then execute the following command to load respective image to the local Docker repository of each K8S Node. 
+
 
 _**NSX Container Plugin (NCP) and NSX Node Agent Pods use the same container image.**_
 
@@ -179,82 +155,28 @@ NSX-T CNI Plugin comes within the "NSX-T Container" package. The package can be 
 
 In the current NSX-T version (2.5.0) , the zip file is named as "**nsx-container-2.5.0.14628220**" . 
 
-* Extract the zip file to a folder. 
+* Extract the zip file to a folder.
 
 ![](2019-24-10-19-06-21.png)
 
-* Use SCP/SSH to copy the folder to the Ubuntu node. Winscp is used as the SCP tool on Windows client and the folder is copied to /home/vmware location on Ubuntu node.
+Use the NCP image for RHEL:  
+![](2019-10-26-07-46-31.png)
 
-* **For all the installation steps mentioned below and following sections in this guide root level access will be used.**
-
-* Escalate to root in the shell
-
-
+Once the above playbook finish do the following on all nodes:
 <pre><code>
-vmware@k8s-master:~$ <b>sudo -H bash</b>
-[sudo] password for vmware:
-root@k8s-master:/home/vmware#
+docker load -i nsx-ncp-rhel-2.5.0.14628220.tar
+# Get the image name 
+docker images
+docker image tag registry.local/nsx-ncp-rhel-2.5.0.14628220.tar nsx-ncp
 </code></pre>
-
-* On the Ubuntu shell, navigate to "/home/vmware/nsx-container-2.5.0.14628220/Kubernetes/" folder, and then install NCP image shown below.
-
-<pre><code>
-root@k8s-master:/home/vmware/nsx-container-2.5.0.14628220/Kubernetes/# 
-<b>docker load  -i nsx-ncp-ubuntu-2.5.0.14628220.tar</b>
-Loaded image: registry.local/2.5.0.14628220/nsx-ncp-ubuntu:latest
-</code></pre>
-
-then we need to tag the ncp image as nsx-ncp:
-<pre><code>
-docker tag registry.local/2.5.0.14628220/nsx-ncp-ubuntu:latest nsx-ncp
-</code></pre>
-
-<pre><code>
-root@k8s-master:/home/vmware/nsx-container-2.5.0.14628220/Kubernetes# <b> docker tag registry.local/2.5.0.14628220/nsx-ncp-ubuntu:latest nsx-ncp:latest</b>
-root@k8s-master:/home/vmware/nsx-container-2.5.0.14628220/Kubernetes#
-</code></pre>
-
-Verify the image name has changed. 
-
-<pre><code>
-root@master:/home/localadmin# docker images
-REPOSITORY                                                         TAG                 IMAGE ID            CREATED             SIZE
-k8s.gcr.io/kube-apiserver                                          v1.14.8             1e94481e8f30        9 days ago          209MB
-k8s.gcr.io/kube-proxy                                              v1.14.8             849af609e0c6        9 days ago          82.1MB
-k8s.gcr.io/kube-controller-manager                                 v1.14.8             36a8001a79fd        9 days ago          158MB
-k8s.gcr.io/kube-scheduler                                          v1.14.8             f1e3e5f9f93e        9 days ago          81.6MB
-registry.local/2.5.0.14628220/nsx-ncp-ubuntu                       latest              40aae9a4aeda        6 weeks ago         744MB
-nsx-ncp                                                            latest              40aae9a4aeda        6 weeks ago         744MB
-284299419820.dkr.ecr.us-west-2.amazonaws.com/ws-client             v1.0.0              d87c306ddd38        6 weeks ago         79.9MB
-284299419820.dkr.ecr.us-west-2.amazonaws.com/k8s-cluster-manager   v0.7.3              c9225cfd6d91        6 weeks ago         148MB
-k8s.gcr.io/coredns                                                 1.3.1               eb516548c180        9 months ago        40.3MB
-k8s.gcr.io/etcd                                                    3.3.10              2c4adeb21b4f        10 months ago       258MB
-tiswanso/install-cni                                               v0.1-dev            84a707a64677        11 months ago       42.8MB
-k8s.gcr.io/pause                                                   3.1                 da86e6ba6ca1        22 months ago       742kB
-
-</code></pre>
-
-## Confiure the NCP for K8s Cluster 
-
-
-In NCP version 2.5 the process of installation and configuration of the NCP improved a lot by automating it.
-The only thing that we need to do is configure one yaml file name ncp-ubuntu.yaml. we can find this file in the folder of the NCP installation. 
-
-![](2019-10-25-11-33-56.png)
-
-example of thee original file (before we modiey it) can be found in this link:
-[here](https://github.com/roie9876/NSXT-VMworld2019/blob/master/Part%204/ncp-ubuntu.yaml)
-
-We now start to explain the diffrent filed of this file
-
 
 
 ##  (NCP) Configuration 
 
-The file, "ncp-ubuntu.yml" will be used to deploy NSX Container Plugin. Node-Agent, Kube-Proxy , OVS and other related NCP configurations. 
+The file, "ncp-opensift.yml" will be used to deploy NSX Container Plugin. Node-Agent, Kube-Proxy , OVS and other related NCP configurations. 
 However, before moving forward, NSX-T specific environmental parameters need to be configured. The yml file contains a configmap for the configuration of the ncp.ini file for the NCP.  Basically most of the parameters are commented out with a "#" character. The definitions of each parameter are in the yml file itself. 
 
-The "ncp-ubuntu.yml" file can simply be edited with a text editor. The parameters in the file that are used in this environment has "#" removed. Below is a list and explanation of each :
+The "ncp-opensift.yml" file can simply be edited with a text editor. The parameters in the file that are used in this environment has "#" removed. Below is a list and explanation of each :
 
 staring with NCP 2.5 we can work with the policy API. with Policy API we need to defined the UUIDs of the objects.
 #### Note: The UUIDs of the policy API are differences then the UUIDs of the manager API.
@@ -320,241 +242,82 @@ This is the IP address of the master node, if we have clusters of k8s masters we
 
 **top_firewall_section_marker = Section1** and **bottom_firewall_section_marker = Section2** : This is to specify between which sections the K8S orchestrated firewall rules will fall in between. 
 
-_**One additional configuration that is made in the yml file is removing the "#" from the line where it says "serviceAccountName: ncp-svc-account" . So that the NCP Pod has appropriate role and access to K8S cluster resources**_ 
-
-
-here is the linke for the full ncp file i'm using for vmworld demo:
-[here](https://github.com/roie9876/NSXT-VMworld2019/blob/master/Part%204/ncp-vmworld2019.yml)
-
-The edited yml file, "ncp-vmworld2019.yml" in this case, can now be deployed from anywhere. In this environment this yml file is copied to /home/vmware folder in K8S Master Node and deployed   the following command.
-
-<pre><code>
-root@master:/home/localadmin# kubectl create  -f ncp-vmworld2019.yml
-customresourcedefinition.apiextensions.k8s.io/nsxerrors.nsx.vmware.com created
-customresourcedefinition.apiextensions.k8s.io/nsxlocks.nsx.vmware.com created
-namespace/nsx-system created
-serviceaccount/ncp-svc-account created
-clusterrole.rbac.authorization.k8s.io/ncp-cluster-role created
-clusterrole.rbac.authorization.k8s.io/ncp-patch-role created
-clusterrolebinding.rbac.authorization.k8s.io/ncp-cluster-role-binding created
-clusterrolebinding.rbac.authorization.k8s.io/ncp-patch-role-binding created
-serviceaccount/nsx-node-agent-svc-account created
-clusterrole.rbac.authorization.k8s.io/nsx-node-agent-cluster-role created
-clusterrolebinding.rbac.authorization.k8s.io/nsx-node-agent-cluster-role-binding created
-configmap/nsx-ncp-config created
-deployment.extensions/nsx-ncp created
-configmap/nsx-node-agent-config created
-daemonset.extensions/nsx-ncp-bootstrap created
-daemonset.extensions/nsx-node-agent created
-</code></pre> 
 
 
 
-Verify that the new namespace is created. 
+
+I modified this file to make it works according to my environment:
+https://github.com/roie9876/NSXT-VMworld2019/blob/master/Part%205/ncp-openshift-VMworkd2019.yml
 
 <pre><code>
-root@master:/home/localadmin# kubectl get ns
-NAME              STATUS   AGE
-default           Active   3d
-kube-node-lease   Active   3d
-kube-public       Active   3d
-kube-system       Active   3d
-nsx-system        Active   8s
-</code></pre> 
+oc create -f ncp-opensift-VMworkd2019.yml
+</code></pre>
+
+
+The namespaces that are provisioned by default can be seen using the following kubectl command.
+<pre><code>
+[root@master01 home]# oc get ns
+NAME                STATUS    AGE
+default             Active    6d
+kube-public         Active    6d
+kube-system         Active    6d
+management-infra    Active    6d
+nsx-system          Active    5d
+openshift           Active    6d
+openshift-infra     Active    6d
+openshift-logging   Active    6d
+openshift-node      Active    6d
+</code></pre>
+
 
 <pre><code>
-root@master:/home/localadmin# kubectl get pod -n nsx-system
-NAME                       READY   STATUS     RESTARTS   AGE
-nsx-ncp-848cc8c8ff-qzmb8   1/1     Running    0          14s
-nsx-ncp-bootstrap-552hh    1/1     Running    0          14s
-nsx-ncp-bootstrap-5t8jv    1/1     Running    0          14s
-nsx-ncp-bootstrap-mncpl    0/1     Init:0/1   0          14s
-nsx-node-agent-fr86l       3/3     Running    0          14s
-nsx-node-agent-hwqm6       3/3     Running    0          14s
-nsx-node-agent-x2ndb       3/3     Running    0          14s
-</code></pre> 
+[root@master01 home]# oc get pod -n nsx-system
+NAME                       READY     STATUS    RESTARTS   AGE
+nsx-ncp-6857f8cd4c-ps96g   1/1       Running   0          51s
+nsx-ncp-bootstrap-7qssw    1/1       Running   0          5d
+nsx-ncp-bootstrap-967v2    1/1       Running   0          5d
+nsx-ncp-bootstrap-98gxf    1/1       Running   0          5d
+nsx-ncp-bootstrap-9zppw    1/1       Running   0          5d
+nsx-ncp-bootstrap-c9ph8    1/1       Running   0          5d
+nsx-ncp-bootstrap-lvs7l    1/1       Running   0          5d
+nsx-ncp-bootstrap-rrtzf    1/1       Running   1          5d
+nsx-node-agent-22zms       3/3       Running   2          5d
+nsx-node-agent-5tznp       3/3       Running   3          5d
+nsx-node-agent-fbwtj       3/3       Running   0          5d
+nsx-node-agent-g9j7n       3/3       Running   0          5d
+nsx-node-agent-qgnb9       3/3       Running   0          5d
+nsx-node-agent-srr27       3/3       Running   0          5d
+nsx-node-agent-w9rkc       3/3       Running   0          5d
 
-After few min the boostrap pod install the: node-agent, kube-proxy , and OVS on all masters and workers.
-then the nsx-system will be look like this:
-
-<pre><code>
-root@master:/home/localadmin# kubectl get pod -n nsx-system
-NAME                       READY   STATUS    RESTARTS   AGE
-nsx-ncp-848cc8c8ff-qzmb8   1/1     Running   0          25m
-nsx-ncp-bootstrap-552hh    1/1     Running   0          25m
-nsx-ncp-bootstrap-5t8jv    1/1     Running   0          25m
-nsx-ncp-bootstrap-mncpl    1/1     Running   0          25m
-nsx-node-agent-fr86l       3/3     Running   0          25m
-nsx-node-agent-hwqm6       3/3     Running   0          25m
-nsx-node-agent-x2ndb       3/3     Running   0          25m
-
-</code></pre> 
-
-We can take a look which containers run inside the nsx-node-agent:
-
-<pre><code>
-root@master:/home/localadmin# kubectl describe pod nsx-node-agent-x2ndb -n nsx-system
-Name:               nsx-node-agent-x2ndb
-Namespace:          nsx-system
-Priority:           0
-PriorityClassName:  <none>
-Node:               master/192.168.110.70
-Start Time:         Fri, 25 Oct 2019 12:59:40 +0300
-Labels:             component=nsx-node-agent
-                    controller-revision-hash=7cb5bc85d9
-                    pod-template-generation=1
-                    tier=nsx-networking
-                    version=v1
-Annotations:        container.apparmor.security.beta.kubernetes.io/nsx-node-agent: localhost/node-agent-apparmor
-Status:             Running
-IP:                 192.168.110.70
-Controlled By:      DaemonSet/nsx-node-agent
-Containers:
-  nsx-node-agent:
-    Container ID:  docker://9d583acd20699e4731aa2c0188f9cec085c782c632fcfe111370adfe20555c53
-    Image:         nsx-ncp
-    Image ID:      docker://sha256:40aae9a4aeda247a15d278a844a77cb0cd4361d63e4ce869d2969099ef27f264
-    Port:          <none>
-    Host Port:     <none>
-    Command:
-      start_node_agent
-    State:          Running
-      Started:      Fri, 25 Oct 2019 12:59:41 +0300
-    Ready:          True
-    Restart Count:  0
-    Liveness:       exec [/bin/sh -c timeout 5 check_pod_liveness nsx-node-agent] delay=5s timeout=5s period=10s #success=1 #failure=5
-    Environment:    <none>
-    Mounts:
-      /etc/nsx-ujo/ncp.ini from config-volume (ro,path="ncp.ini")
-      /host/proc from proc (ro)
-      /var/run/netns from netns (rw)
-      /var/run/nsx-ujo from cni-sock (rw)
-      /var/run/openvswitch from openvswitch (rw)
-      /var/run/secrets/kubernetes.io/serviceaccount from nsx-node-agent-svc-account-token-46kbd (ro)
-  nsx-kube-proxy:
-    Container ID:  docker://292992ba9c613d85ff5020bcb24ecb11bb34c00808ca29436a6f6e3cefa9c456
-    Image:         nsx-ncp
-    Image ID:      docker://sha256:40aae9a4aeda247a15d278a844a77cb0cd4361d63e4ce869d2969099ef27f264
-    Port:          <none>
-    Host Port:     <none>
-    Command:
-      start_kube_proxy
-    State:          Running
-      Started:      Fri, 25 Oct 2019 12:59:42 +0300
-    Ready:          True
-    Restart Count:  0
-    Liveness:       exec [/bin/sh -c timeout 5 check_pod_liveness nsx-kube-proxy] delay=5s timeout=1s period=5s #success=1 #failure=3
-    Environment:    <none>
-    Mounts:
-      /etc/nsx-ujo/ncp.ini from config-volume (ro,path="ncp.ini")
-      /var/run/openvswitch from openvswitch (rw)
-      /var/run/secrets/kubernetes.io/serviceaccount from nsx-node-agent-svc-account-token-46kbd (ro)
-  nsx-ovs:
-    Container ID:  docker://29650d44a6622a5306d4f79a95728f3b0f624550eb920d30d3469b74378fd876
-    Image:         nsx-ncp
-    Image ID:      docker://sha256:40aae9a4aeda247a15d278a844a77cb0cd4361d63e4ce869d2969099ef27f264
-    Port:          <none>
-    Host Port:     <none>
-    Command:
-      start_ovs
-    State:          Running
-      Started:      Fri, 25 Oct 2019 12:59:43 +0300
-    Ready:          True
-    Restart Count:  0
-    Liveness:       exec [/bin/sh -c timeout 5 check_pod_liveness nsx-ovs] delay=5s timeout=1s period=5s #success=1 #failure=3
-    Environment:    <none>
-    Mounts:
-      /etc/nsx-ujo/ncp.ini from config-volume (ro,path="ncp.ini")
-      /etc/openvswitch from host-config-openvswitch (rw)
-      /host/etc/os-release from host-os-release (ro)
-      /lib/modules from host-modules (ro)
-      /sys from host-sys (ro)
-      /var/run/openvswitch from openvswitch (rw)
-      /var/run/secrets/kubernetes.io/serviceaccount from nsx-node-agent-svc-account-token-46kbd (ro)
-Conditions:
-  Type              Status
-  Initialized       True
-  Ready             True
-  ContainersReady   True
-  PodScheduled      True
-Volumes:
-  config-volume:
-    Type:      ConfigMap (a volume populated by a ConfigMap)
-    Name:      nsx-node-agent-config
-    Optional:  false
-  openvswitch:
-    Type:          HostPath (bare host directory volume)
-    Path:          /var/run/openvswitch
-    HostPathType:
-  cni-sock:
-    Type:          HostPath (bare host directory volume)
-    Path:          /var/run/nsx-ujo
-    HostPathType:
-  netns:
-    Type:          HostPath (bare host directory volume)
-    Path:          /var/run/netns
-    HostPathType:
-  proc:
-    Type:          HostPath (bare host directory volume)
-    Path:          /proc
-    HostPathType:
-  host-sys:
-    Type:          HostPath (bare host directory volume)
-    Path:          /sys
-    HostPathType:
-  host-modules:
-    Type:          HostPath (bare host directory volume)
-    Path:          /lib/modules
-    HostPathType:
-  host-config-openvswitch:
-    Type:          HostPath (bare host directory volume)
-    Path:          /etc/openvswitch
-    HostPathType:
-  host-os-release:
-    Type:          HostPath (bare host directory volume)
-    Path:          /etc/os-release
-    HostPathType:
-  nsx-node-agent-svc-account-token-46kbd:
-    Type:        Secret (a volume populated by a Secret)
-    SecretName:  nsx-node-agent-svc-account-token-46kbd
-    Optional:    false
-QoS Class:       BestEffort
-Node-Selectors:  <none>
-Tolerations:     node-role.kubernetes.io/master:NoSchedule
-                 node.kubernetes.io/disk-pressure:NoSchedule
-                 node.kubernetes.io/memory-pressure:NoSchedule
-                 node.kubernetes.io/network-unavailable:NoSchedule
-                 node.kubernetes.io/not-ready:NoSchedule
-                 node.kubernetes.io/not-ready:NoExecute
-                 node.kubernetes.io/pid-pressure:NoSchedule
-                 node.kubernetes.io/unreachable:NoSchedule
-                 node.kubernetes.io/unreachable:NoExecute
-                 node.kubernetes.io/unschedulable:NoSchedule
-Events:
-  Type     Reason     Age                From               Message
-  ----     ------     ----               ----               -------
-  Normal   Scheduled  26m                default-scheduler  Successfully assigned nsx-system/nsx-node-agent-x2ndb to master
-  Normal   Pulled     26m                kubelet, master    Container image "nsx-ncp" already present on machine
-  Normal   Created    26m                kubelet, master    Created container nsx-node-agent
-  Normal   Started    26m                kubelet, master    Started container nsx-node-agent
-  Normal   Pulled     26m                kubelet, master    Container image "nsx-ncp" already present on machine
-  Normal   Created    26m                kubelet, master    Created container nsx-kube-proxy
-  Normal   Started    26m                kubelet, master    Started container nsx-kube-proxy
-  Normal   Pulled     26m                kubelet, master    Container image "nsx-ncp" already present on machine
-  Normal   Created    26m                kubelet, master    Created container nsx-ovs
-  Normal   Started    26m                kubelet, master    Started container nsx-ovs
-  Warning  Unhealthy  26m (x2 over 26m)  kubelet, master    Liveness probe failed:
-
-</code></pre> 
-
-We have the 3 following containers:  
-*nsx-node-agent  
-*nsx-kube-proxy  
-*nsx-ovs
-
+</code></pre>
 
 
 **Notice the changes to the existing logical switches/segments, Tier 1 Logical Routers, Load Balancer below . All these newly created objects have been provisioned by NCP (as soon as NCP Pod has been successfully deployed) by identifying the  the K8S desired state and mapping the K8S resources in etcd to the NSX-T Logical Networking constructs.**
+
+We can view the tier1 gateway created by NCP:  
+
+![](2019-10-26-09-01-04.png)
+
+
+This tieer1 have 9 Seegments, each segemnt its equal to OpenShift project:  
+![](2019-10-26-09-02-22.png)
+
+
+For each OpenShift project we have NAT etry created on the tier1 Gateway:
+
+![](2019-10-26-09-03-52.png)
+
+NCP automaticly created Load Balancer with two VIPs:
+![](2019-10-26-09-06-32.png)
+
+In The Virtual Server (VIP) we have two L7 etnry:
+![](2019-10-26-09-07-21.png)
+
+
+
+
+
+
 
 LOGICAL Segments  
 ![](2019-10-25-13-05-38.png)
