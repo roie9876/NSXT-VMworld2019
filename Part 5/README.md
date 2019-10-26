@@ -17,7 +17,7 @@ https://blogs.vmware.com/networkvirtualization/2019/02/nsx-t-integration-with-op
 
 In my lab i deploy 7 VMs as fllows:  
 
-![](2019-10-26-06-53-33.png)
+![](2019-10-26-07-36-26.png)
 
 My Host file:
 
