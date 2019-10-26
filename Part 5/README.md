@@ -202,7 +202,7 @@ the **"id" : "k8s-LB-Poo"** this is the object UUID.
 
 let's start to explain the different parameters:
 
-[nsx_v3]
+**[nsx_v3]**
 
 **policy_nsxapi = True** : Specify that NCP will work with the Policy API.  
 
@@ -317,57 +317,15 @@ In The Virtual Server (VIP) we have two L7 etnry:
 
 
 
-
-
-
-
-LOGICAL Segments  
-![](2019-10-25-13-05-38.png)
-
-New Tier1 LOGICAL Gateway:
-![](2019-10-25-13-28-37.png)
-
-
-Connected to this Tier1 logical router we have the following Segnets: 
-![](2019-10-25-13-32-51.png)
-
-SNAT Rules
-![](2019-10-25-13-35-26.png)
-
-
-LOAD BALANCER runing on the same Tier1 created to the k8scluster
-![](2019-10-25-13-36-48.png)
-
-VIRTUAL SERVERS for INGRESS on LOAD BALANCER
-![](2019-10-25-13-38-26.png)
-
-FIREWALL RULEBASE
-![](2019-10-25-13-38-57.png)
-
-Notice also that CoreDNS pods are changed thier status to Running state.  
-<pre><code>
-root@master:/home/localadmin# kubectl get pod -n kube-system
-NAME                             READY   STATUS    RESTARTS   AGE
-coredns-584795fc57-5wvll         1/1     Running   1          3d20h
-coredns-584795fc57-pmgl5         1/1     Running   1          3d20h
-etcd-master                      1/1     Running   0          4d5h
-kube-apiserver-master            1/1     Running   0          4d5h
-kube-controller-manager-master   1/1     Running   0          4d5h
-kube-proxy-vpgfq                 1/1     Running   0          4d5h
-kube-proxy-zlc9f                 1/1     Running   0          4d5h
-kube-scheduler-master            1/1     Running   0          4d5h
-</code></pre> 
-
-
-
 # Deploy the acme application
 Thie application contains a Polyglot demo application comprised of (presently) 6 microservices and 4 datastores:  
 
-![](2019-10-25-15-41-51.png)
+![](2019-10-26-16-12-27.png)
 
-The contents here are the necessary YAML files to deploy the ACMEFIT application in a kubernetes cluster.
+The contents here are the necessary YAML files to deploy the ACMEFIT application in a OpenShift cluster.
 
-This app is developed by team behind www.cloudjourney.io
+This app is developed by team behind www.cloudjourney.io  
+The linke to forked app:
 
 https://github.com/roie9876/acme_fitness_demo
 
@@ -377,65 +335,10 @@ git clone https://github.com/roie9876/acme_fitness_demo
 
 
 
-create acme  namespace, we can work with NAT namespace or No-NAT. lets create No-Nat. to do this we need to anotated the namespace.
-
-<pre><code>
-cat acme-no-nat.yaml
-apiVersion: v1
-kind: Namespace
-metadata:
-   name: acme
-   annotations:
-      ncp/no_snat: "True"
-</code></pre> 
-
-<pre><code>
-root > cat acme-no-nat.yaml
-apiVersion: v1
-kind: Namespace
-metadata:
-   name: acme
-   annotations:
-      ncp/no_snat: "True"
-root > kubectl create -f acme-no-nat.yaml
-namespace/acme created  
-  
-
-root > kubectl describe ns acme
-Name:         acme
-Labels:       <none>
-Annotations:  ncp/no_snat: True
-Status:       Active
-
-No resource quota.
-
-No resource limits.
-
-</code></pre>   
-
-We can see the results of the new namespace in NSX Segments, we have new Segment with the name: seg-k8cluster-acme-0.  
-In the PORTS we have 0 Connected PODs (we didn't deploy any PODs yet...)
-
-![](2019-10-25-16-13-36.png)
-
-NSXT curve new CIDR 10.19.2.0/24 where the 10.19.2.1 is the default Gateway for this namespce 
-![](2019-10-25-16-16-03.png)
-
-We can chekc if we have NCP create NAT rule for this namespace:  
-As you can see there is no any ANT entry for 10.19.2.0/42
-![](2019-10-25-16-17-39.png)
-
-
-Lets change the default namespace to acme:
-<pre><code>
-root > kubectl config set-context --current --namespace=acme
-Context "kubernetes-admin@kubernetes" modified.
- </code></pre>   
-
 
 # Deploy the acme application:  
 <pre><code>
-root > kubectl create -f acme_fitness.yaml
+[root@master01 home]# oc create -f acme_fitness_demo/kubernetes-manifests/acme_fitness.yaml
 secret/redis-pass created
 secret/catalog-mongo-pass created
 secret/order-mongo-pass created
@@ -461,45 +364,43 @@ service/users-mongo created
 deployment.apps/users-mongo created
 service/users created
 deployment.apps/users created
- </code></pre>    
+</code></pre>
 
+Check The status of the PODs
 
 <pre><code>
-root > kubectl get pod -o wide
-NAME                             READY   STATUS    RESTARTS   AGE   IP           NODE     NOMINATED NODE   READINESS GATES
-cart-6d84f4cf64-ftlbp            1/1     Running   0          42s   10.19.2.4    node02   <none>           <none>
-cart-redis-7fcdbcd8d8-848rx      1/1     Running   0          42s   10.19.2.5    node02   <none>           <none>
-catalog-587f7df8c8-7bxst         1/1     Running   0          41s   10.19.2.2    node02   <none>           <none>
-catalog-mongo-5c8db99954-l2plp   1/1     Running   0          41s   10.19.2.3    node02   <none>           <none>
-frontend-7557468545-9gzb2        1/1     Running   0          41s   10.19.2.6    node02   <none>           <none>
-order-c8885777b-kjdf7            1/1     Running   0          41s   10.19.2.8    node02   <none>           <none>
-order-mongo-7cc8f784f8-tl29b     1/1     Running   0          41s   10.19.2.7    node02   <none>           <none>
-payment-79bc456ff-cxprm          1/1     Running   0          40s   10.19.2.9    node02   <none>           <none>
-users-6d7c5dd7c8-t6jmc           1/1     Running   0          40s   10.19.2.11   node02   <none>           <none>
-users-mongo-7cfb97b5bb-mxhkc     1/1     Running   0          40s   10.19.2.10   node02   <none>           <none>
-  
+[root@master01 home]# oc get pod -o wide
+NAME                             READY     STATUS    RESTARTS   AGE       IP            NODE                 NOMINATED NODE
+cart-74868657bd-f58fx            1/1       Running   0          23s       10.11.10.2    infra01.lab.local    <none>
+cart-redis-8548895c64-5j4db      1/1       Running   0          23s       10.11.10.3    node01.lab.local     <none>
+catalog-5d86b4447d-q88qq         1/1       Running   0          22s       10.11.10.4    infra01.lab.local    <none>
+catalog-mongo-5f7f9b97cb-v6m69   1/1       Running   0          22s       10.11.10.7    infra01.lab.local    <none>
+frontend-76b454779c-scg8k        1/1       Running   0          22s       10.11.10.5    node02.lab.local     <none>
+order-f59554484-q7cjw            1/1       Running   0          22s       10.11.10.6    node02.lab.local     <none>
+order-mongo-84d55494dd-7b5ft     1/1       Running   0          22s       10.11.10.8    infra02.lab.local    <none>
+payment-77d6776ddc-2s9lq         1/1       Running   0          22s       10.11.10.9    node01.lab.local     <none>
+users-d5856777d-9f4ng            1/1       Running   0          21s       10.11.10.11   node01.lab.local     <none>
+users-mongo-647bd448b-qkqsp      1/1       Running   0          21s       10.11.10.10   master01.lab.local   <none>
+
 </code></pre>   
-As you can see, all the PODs get IPs from range 10.19.2.0/24
+As you can see, all the PODs get IPs from range 10.11.10.0/24
 
 We can see the reflections of the PODs in NSXT
-![](2019-10-25-16-20-59.png)  
+![](2019-10-26-16-19-55.png) 
 
 Now we have 10 PORTs connected to this segments
 we can see the PODs name from NSX UI:  
-![](2019-10-25-16-24-24.png)
+![](2019-10-26-16-20-23.png)
 
-We can see all the K8s tags from the NSX UI:  
-![](2019-10-25-16-25-44.png)
+We can see all the OpenShift tags from the NSX UI:  
+![](2019-10-26-16-21-01.png)
 
 
-The Load Balancer status before deploy new LB VIPs:
-![](2019-10-25-16-38-20.png)
-This is the default VIP created with the K8s cluster.
 
 # L4 Load Balancer
 Create new L4 Service Type LB with persistence IP
 <pre><code>
-root > cat frontend-svc.yaml
+[root@master01 kubernetes-manifests]# cat frontend-svc.yaml
 apiVersion: v1
 kind: Service
 metadata:
@@ -511,7 +412,7 @@ metadata:
 spec:
   ports:
   - name: http-frontend
-    nodePort: 30807
+#    nodePort: 30807
     port: 3000
     protocol: TCP
     targetPort: 3000
@@ -519,81 +420,75 @@ spec:
     app: frontend-total
     service: frontend
   type: LoadBalancer
-  loadBalancerIP: 10.15.100.100
+  loadBalancerIP: 10.14.100.100
 </code></pre>  
 
-We expting the VIP IP address will be 10.15.100.100
+We expting the VIP IP address will be 10.14.100.100
 <pre><code>
-root > kubectl create -f frontend-svc.yaml
+[root@master01 kubernetes-manifests]# oc create -f frontend-svc.yaml
 service/frontend created
-root > kubectl get svc
-NAME            TYPE           CLUSTER-IP       EXTERNAL-IP     PORT(S)          AGE
-cart            ClusterIP      10.100.119.49    <none>          5000/TCP         22m
-cart-redis      ClusterIP      10.105.208.2     <none>          6379/TCP         22m
-catalog         ClusterIP      10.101.251.48    <none>          8082/TCP         22m
-catalog-mongo   ClusterIP      10.111.14.3      <none>          27017/TCP        22m
-frontend        LoadBalancer   10.105.235.195   10.15.100.100   3000:30807/TCP   9s
-order           ClusterIP      10.111.73.197    <none>          6000/TCP         22m
-order-mongo     ClusterIP      10.97.151.38     <none>          27017/TCP        22m
-payment         ClusterIP      10.103.128.200   <none>          9000/TCP         22m
-users           ClusterIP      10.106.44.10     <none>          8081/TCP         22m
-users-mongo     ClusterIP      10.104.246.186   <none>          27017/TCP        22m
+
+[root@master01 kubernetes-manifests]# oc get svc frontend
+NAME       TYPE           CLUSTER-IP       EXTERNAL-IP     PORT(S)          AGE
+frontend   LoadBalancer   172.30.232.167   10.14.100.100   3000:31435/TCP   18s
 
 </code></pre>   
 
-The as you can see the svc of the frontend has 10.15.100.100 with port 3000 as L4 entry.
+The as you can see the svc of the frontend has 10.14.100.100 with port 3000 as L4 entry.
 We can see the results of the new LB VIP in NSX UI:
 
-![](2019-10-25-16-43-50.png)
+![](2019-10-26-16-24-08.png)
 
 
 
 We can see the server pool member from NSX UI:
-![](2019-10-25-16-44-44.png)
+![](2019-10-26-16-27-09.png)
 
+we can see we have only one member:  
+![](2019-10-26-16-28-10.png)
 
 Scale more frontend PODs to the acme app:
 
 <pre><code>
-root > kubectl scale --replicas=2 deployment frontend
+root@master01 kubernetes-manifests]# oc scale --replicas=2 deployment frontend
 deployment.extensions/frontend scaled
-  
 </code></pre>   
 
 We can see that we now have 2 endpoint in the service pool: 
 <pre><code>  
-root > kubectl describe svc frontend
+[root@master01 kubernetes-manifests]# oc describe svc frontend
 Name:                     frontend
 Namespace:                acme
 Labels:                   app=frontend-total
                           service=frontend
-Annotations:              ncp/internal_ip_for_policy: 100.64.128.5
+Annotations:              ncp/internal_ip_for_policy=100.64.128.1
 Selector:                 app=frontend-total,service=frontend
 Type:                     LoadBalancer
-IP:                       10.105.235.195
-IP:                       10.15.100.100
-LoadBalancer Ingress:     10.15.100.100
+IP:                       172.30.232.167
+IP:                       10.14.100.100
+LoadBalancer Ingress:     10.14.100.100
 Port:                     http-frontend  3000/TCP
 TargetPort:               3000/TCP
-NodePort:                 http-frontend  30807/TCP
-Endpoints:                10.19.2.12:3000,10.19.2.6:3000
+NodePort:                 http-frontend  31435/TCP
+Endpoints:                10.11.10.12:3000,10.11.10.5:3000
 Session Affinity:         None
 External Traffic Policy:  Cluster
 Events:                   <none>
- 
+
 </code></pre> 
 
 From NSX UI we can see we have new member in the server pool:
-![](2019-10-25-16-48-27.png)
+![](2019-10-26-16-29-40.png)
 
 Test the acme application with the broswer:
-![](2019-10-25-16-49-19.png)
+![](2019-10-26-16-30-06.png)
 
 
 # L7 Ingress
 We can create L7 ingress for the frontend service:  
 
-root > cat ingress.yaml
+<pre><code>
+[root@master01 kubernetes-manifests]# cat ingress.yaml
 apiVersion: extensions/v1beta1
 kind: Ingress
 metadata:
@@ -607,29 +502,35 @@ spec:
         backend:
           serviceName: frontend
           servicePort: 3000
+
 root > kubectl create -f ingress.yaml
 ingress.extensions/frontend created
-root > kubectl describe ingress frontend
+[root@master01 kubernetes-manifests]# oc create -f ingress.yaml
+ingress.extensions/frontend created
+[root@master01 kubernetes-manifests]# oc describe ingress frontend
 Name:             frontend
 Namespace:        acme
-Address:          10.20.1.1
+Address:
 Default backend:  default-http-backend:80 (<none>)
 Rules:
   Host                Path  Backends
   ----                ----  --------
   frontend.lab.local
-                      /*   frontend:3000 (10.19.2.12:3000,10.19.2.6:3000)
+                      /*   frontend:3000 (<none>)
 Annotations:
-  ncp/internal_ip_for_policy:  100.64.128.5
-Events:                        <none>
+Events:  <none>
+</code></pre> 
 
 In the NSX-T LB we can can see the L7 rule:  
 The rule created in the **Request Forwarding Phase**
-![](2019-10-25-17-16-21.png)
+![](2019-10-26-16-33-01.png)
 
 We can view the re-write rule from the UI:  
 
-![](2019-10-25-17-17-48.png)
-
+![](2019-10-26-16-33-23.png)
 The user sends traffic to URL: frontend.lab.local which hit the L7 Ingress in NSX LB. Then the NSX LB re-write this request and sends it to the K8s frontend pool.
 
+
+Open the browser to http://frontend.lab.local:  
+
+![](2019-10-26-16-33-45.png)
