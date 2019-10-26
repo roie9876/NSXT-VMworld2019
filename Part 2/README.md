@@ -1,5 +1,5 @@
 # NSX-T & K8S - PART 2
-[Home Page](https://github.com/dumlutimuralp/nsx-t-k8s)
+[Home Page](https://github.com/roie9876/NSXT-VMworld2019)
 
 # Table Of Contents
 
