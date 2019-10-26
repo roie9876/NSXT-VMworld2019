@@ -1,12 +1,11 @@
 # NSX-T & K8S - PART 4
-[Home Page](https://github.com/dumlutimuralp/nsx-t-k8s)
+[Home Page](https://github.com/roie9876/NSXT-VMworld2019)
 
 # Table Of Contents
 
 [Current State](#Current-State)   
 [NSX Container Plugin (NCP) Installation](#NSX-Container-Plugin-Installation)  
-[NSX Node Agent Installation](#NSX-Node-Agent-Installation)  
-[Test Workload Deployment](#Test-Workload-Deployment)
+[Deploy sample Application](#Test-Workload-Deployment)
 
 # Current State before install and configure the NCP
 [Back to Table of Contents](#Table-Of-Contents)
