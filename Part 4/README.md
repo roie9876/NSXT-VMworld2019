@@ -1,56 +1,83 @@
-# NSX-T & K8S - PART 4
+# NSX-T & OpenShift - PART 5
 [Home Page](https://github.com/roie9876/NSXT-VMworld2019)
 
 # Table Of Contents
 
 [Current State](#Current-State)   
-[NSX Container Plugin (NCP) Installation](#NSX-Container-Plugin-Installation)  
+[NSX Container Plugin (NCP) Installation with OpenShift](#NSX-Container-Plugin-Installation)  
 [Deploy sample Application](#Test-Workload-Deployment)
 
 # Current State before install and configure the NCP
 [Back to Table of Contents](#Table-Of-Contents)
 
-## K8S Cluster
+## Install OpenShift Cluster
 
-Previously in Part 3, K8S cluster has successfully been formed using kubeadm. 
+We need to new OpenShift Cluster in version 3.11. 
+You can read very good blog post created by Yasen Simeonov.
+https://blogs.vmware.com/networkvirtualization/2019/02/nsx-t-integration-with-openshift.html/ 
+
+In my lab i deploy 7 VMs as fllows:  
+
+![](2019-10-26-06-53-33.png)
+
+My Host file:
 
 <pre><code>
-root@master:/home/localadmin# kubectl get node
-NAME     STATUS   ROLES    AGE     VERSION
-master   Ready    master   2d22h   v1.15.5
-node01   Ready          <none>   2d22h   v1.15.5
-node02   Ready          <none>   2d18h   v1.15.5
+[OSEv3:children]
+masters
+nodes
+etcd
+
+[OSEv3:vars]
+ansible_ssh_user=root
+openshift_deployment_type=origin
+
+openshift_master_identity_providers=[{'name': 'htpasswd_auth', 'login': 'true', 'challenge': 'true', 'kind': 'HTPasswdPasswordIdentityProvider'}]
+openshift_master_htpasswd_users={'demo':'$apr1$Y.qago1d$kq387DpWGC.NrbCyLG8xf.'}
+openshift_disable_check=package_version,memory_availability,disk_availability,docker_storage,docker_image_availability
+openshift_cluster_monitoring_operator_install=false
+openshift_logging_install_logging=false
+openshift_web_console_install=false
+
+openshift_master_default_subdomain=demo.lab.local
+openshift_use_nsx=false
+os_sdn_network_plugin_name=cni
+openshift_use_openshift_sdn=false
+openshift_node_sdn_mtu=1500
+openshift_master_cluster_method=native
+openshift_master_cluster_hostname=master01.lab.local
+openshift_master_cluster_public_hostname=master01.lab.local
+
+[masters]
+master01.lab.local
+master02.lab.local
+master03.lab.local
+
+[etcd]
+master01.lab.local
+master02.lab.local
+master03.lab.local
+
+[nodes]
+master01.lab.local ansible_ssh_host=192.168.112.71 openshift_node_group_name='node-config-master'
+master02.lab.local ansible_ssh_host=192.168.112.72 openshift_node_group_name='node-config-master'
+master03.lab.local ansible_ssh_host=192.168.112.73 openshift_node_group_name='node-config-master'
+infra01.lab.local ansible_ssh_host=192.168.112.74 openshift_node_group_name='node-config-infra'
+infra02.lab.local ansible_ssh_host=192.168.112.75 openshift_node_group_name='node-config-infra'
+node01.lab.local ansible_ssh_host=192.168.112.76 openshift_node_group_name='node-config-compute'
+node02.lab.local ansible_ssh_host=192.168.112.77 openshift_node_group_name='node-config-compute'
 
 </code></pre>
 
 The namespaces that are provisioned by default can be seen using the following kubectl command.
 
 <pre><code>
-root@master:/home/localadmin# kubectl get ns
-NAME              STATUS   AGE
-default           Active   2d22h
-kube-node-lease   Active   2d22h
-kube-public       Active   2d22h
-kube-system       Active   2d22h
-root@master:/home/localadmin#
+
 
 </code></pre>
 
-To see which infrastructure Pods are automatically provisioned during the initialization of K8S cluster, following command can be used.
 
 <pre><code>
-root@master:/home/localadmin# kubectl get pods --all-namespaces
-NAMESPACE     NAME                             READY   STATUS              RESTARTS   AGE
-kube-system   coredns-584795fc57-hwxrv         0/1     ContainerCreating   0          31s
-kube-system   coredns-584795fc57-zpjh6         0/1     ContainerCreating   0          6s
-kube-system   etcd-master                      1/1     Running             0          2d22h
-kube-system   kube-apiserver-master            1/1     Running             0          2d22h
-kube-system   kube-controller-manager-master   1/1     Running             0          2d22h
-kube-system   kube-proxy-9bvvf                 1/1     Running             1          2d18h
-kube-system   kube-proxy-9vhcf                 1/1     Running             1          2d22h
-kube-system   kube-proxy-xpkhk                 1/1     Running             0          2d22h
-kube-system   kube-scheduler-master            1/1     Running             0          2d22h
-
 
 </code></pre>
 
@@ -60,71 +87,7 @@ _**Notice "coredns-xxx" Pods are stuck in "ContainerCreating" phase, the reason 
 We can learn it from the description of the coredns pod:  
 
 <pre><code>
-root@master:/home/localadmin# kubectl describe pod coredns-584795fc57-hwxrv  -n kube-system
-Name:               coredns-584795fc57-hwxrv
-Namespace:          kube-system
-Priority:           2000000000
-PriorityClassName:  system-cluster-critical
-Node:               node02/192.168.110.73
-Start Time:         Fri, 25 Oct 2019 11:22:00 +0300
-Labels:             k8s-app=kube-dns
-                    pod-template-hash=584795fc57
-Annotations:        <none>
-Status:             Pending
-IP:
-Controlled By:      ReplicaSet/coredns-584795fc57
-Containers:
-  coredns:
-    Container ID:
-    Image:         k8s.gcr.io/coredns:1.3.1
-    Image ID:
-    Ports:         53/UDP, 53/TCP, 9153/TCP
-    Host Ports:    0/UDP, 0/TCP, 0/TCP
-    Args:
-      -conf
-      /etc/coredns/Corefile
-    State:          Waiting
-      Reason:       ContainerCreating
-    Ready:          False
-    Restart Count:  0
-    Limits:
-      memory:  170Mi
-    Requests:
-      cpu:        100m
-      memory:     70Mi
-    Liveness:     http-get http://:8080/health delay=60s timeout=5s period=10s #success=1 #failure=5
-    Readiness:    http-get http://:8080/health delay=0s timeout=1s period=10s #success=1 #failure=3
-    Environment:  <none>
-    Mounts:
-      /etc/coredns from config-volume (ro)
-      /var/run/secrets/kubernetes.io/serviceaccount from coredns-token-8xg74 (ro)
-Conditions:
-  Type              Status
-  Initialized       True
-  Ready             False
-  ContainersReady   False
-  PodScheduled      True
-Volumes:
-  config-volume:
-    Type:      ConfigMap (a volume populated by a ConfigMap)
-    Name:      coredns
-    Optional:  false
-  coredns-token-8xg74:
-    Type:        Secret (a volume populated by a Secret)
-    SecretName:  coredns-token-8xg74
-    Optional:    false
-QoS Class:       Burstable
-Node-Selectors:  beta.kubernetes.io/os=linux
-Tolerations:     CriticalAddonsOnly
-                 node-role.kubernetes.io/master:NoSchedule
-                 node.kubernetes.io/not-ready:NoExecute for 300s
-                 node.kubernetes.io/unreachable:NoExecute for 300s
-Events:
-  Type     Reason                  Age               From               Message
-  ----     ------                  ----              ----               -------
-  Normal   Scheduled               45s               default-scheduler  Successfully assigned kube-system/coredns-584795fc57-hwxrv to node02
-  Warning  FailedCreatePodSandBox  44s               kubelet, node02    Failed create pod sandbox: rpc error: code = Unknown desc = [failed to set up sandbox container "8958bc4b62fa3292d8209e423b34d49d78fa9749b153db733b7ffcd30bae3ac2" network for pod "coredns-584795fc57-hwxrv": NetworkPlugin cni failed to set up pod "coredns-584795fc57-hwxrv_kube-system" network: Failed to connect to nsx_node_agent: [Errno 111] Connection refused, failed to clean up sandbox container "8958bc4b62fa3292d8209e423b34d49d78fa9749b153db733b7ffcd30bae3ac2" network for pod "coredns-584795fc57-hwxrv": NetworkPlugin cni failed to teardown pod "coredns-584795fc57-hwxrv_kube-system" network: Failed to connect to nsx_node_agent: [Errno 111] Connection refused]
-  Normal   SandboxChanged          2s (x4 over 44s)  kubelet, node02    Pod sandbox changed, it will be killed and re-created.
+
 </code></pre>
 
 
