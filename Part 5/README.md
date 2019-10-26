@@ -202,6 +202,8 @@ the **"id" : "k8s-LB-Poo"** this is the object UUID.
 
 let's start to explain the different parameters:
 
+[nsx_v3]
+
 **policy_nsxapi = True** : Specify that NCP will work with the Policy API.  
 
 **single_tier_topology = True** : configure single tier1 per K8s/OpenShift Cluster. starting with NCP 2.5 we have two options for the tier1. we can manually create this tier1 and specify his name in the ncp config file, or we can let ncp automatically create this tier1. in this demo we want NCP to create this tier1 gateway. the name of tier1 taken from the **cluster =** parameters, in our demo its k8scluster.

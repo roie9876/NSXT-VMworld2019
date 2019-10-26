@@ -254,7 +254,8 @@ the **"id" : "k8s-LB-Poo"** this is the object UUID.
   ![](2019-10-25-12-25-42.png)  
     
 
-let's start to explain the different parameters:
+let's start to explain the different parameters:  
+[nsx_v3] 
 
 **policy_nsxapi = True** : Specify that NCP will work with the Policy API.  
 
