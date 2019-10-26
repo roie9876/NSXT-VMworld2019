@@ -55,13 +55,13 @@ Below articles focus on the management and data plane integration principles of 
 * K8S Node Dataplane Connectivity
 
 
-### [Part 2](https://github.com/roie9876/NSXT-VMworld2019/README.md)
+### [Part 2](https://github.com/roie9876/NSXT-VMworld2019/tree/master/Part%202
 
 * Container Network Interface (CNI)
 * NSX-T Components in Kubernetes Integration
 * NSX-T & K8S Overall Architecture
 
-### [Part 3](https://github.com/roie9876/NSXT-VMworld2019/README.md)
+### [Part 3](https://github.com/roie9876/NSXT-VMworld2019/tree/master/Part%203)
 
 * Ubuntu OS Installation
 * Topology
@@ -71,7 +71,14 @@ Below articles focus on the management and data plane integration principles of 
 * Docker Installation
 * Deploy K8S
 
-### [Part 4](https://github.com/roie9876/NSXT-VMworld2019)
+### [Part 4](https://github.com/roie9876/NSXT-VMworld2019/tree/master/Part%204)
 
 * NCP and K8s cluster integration
 * NSX Container Plugin (NCP) Installation
+* Deploy sample Application
+
+### [Part 5](https://github.com/roie9876/NSXT-VMworld2019/tree/master/Part%205)
+
+* NCP and OpenShift cluster integration
+* NSX Container Plugin (NCP) Installation
+* Deploy sample Application
