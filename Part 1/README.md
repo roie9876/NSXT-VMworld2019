@@ -1,6 +1,6 @@
 
 # NSX-T Infrastrcutre - Part 1
-[Home Page](https://github.com/dumlutimuralp/nsx-t-k8s)
+[Home Page](https://github.com/roie9876/NSXT-VMworld2019)
 
 This guide outlines the configuration steps needed to implement a basic logical network topology. The assumption is vCenter, ESX Hosts and NSX-T Manager has already been deployed.
 I forked this guide from amazing works done by Dumlu Timuralp and Hakan Akkurt all the credits belong to them !!!!
