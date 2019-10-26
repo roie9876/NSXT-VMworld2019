@@ -1,0 +1,46 @@
+[OSEv3:children]
+masters
+nodes
+etcd
+
+[OSEv3:vars]
+ansible_ssh_user=root
+openshift_deployment_type=origin
+
+openshift_master_identity_providers=[{'name': 'htpasswd_auth', 'login': 'true', 'challenge': 'true', 'kind': 'HTPasswdPasswordIdentityProvider'}]
+openshift_master_htpasswd_users={'demo':'$apr1$Y.qago1d$kq387DpWGC.NrbCyLG8xf.'}
+openshift_disable_check=package_version,memory_availability,disk_availability,docker_storage,docker_image_availability
+openshift_cluster_monitoring_operator_install=false
+openshift_logging_install_logging=false
+openshift_web_console_install=false
+
+openshift_master_default_subdomain=demo.lab.local
+openshift_use_nsx=false
+os_sdn_network_plugin_name=cni
+openshift_use_openshift_sdn=false
+openshift_node_sdn_mtu=1500
+openshift_master_cluster_method=native
+openshift_master_cluster_hostname=master01.lab.local
+openshift_master_cluster_public_hostname=master01.lab.local
+# NSX specific configuration
+
+#nsx_use_loadbalancer=false
+
+[masters]
+master01.lab.local
+master02.lab.local
+master03.lab.local
+
+[etcd]
+master01.lab.local
+master02.lab.local
+master03.lab.local
+
+[nodes]
+master01.lab.local ansible_ssh_host=192.168.112.71 openshift_node_group_name='node-config-master'
+master02.lab.local ansible_ssh_host=192.168.112.72 openshift_node_group_name='node-config-master'
+master03.lab.local ansible_ssh_host=192.168.112.73 openshift_node_group_name='node-config-master'
+infra01.lab.local ansible_ssh_host=192.168.112.74 openshift_node_group_name='node-config-infra'
+infra02.lab.local ansible_ssh_host=192.168.112.75 openshift_node_group_name='node-config-infra'
+node01.lab.local ansible_ssh_host=192.168.112.76 openshift_node_group_name='node-config-compute'
+node02.lab.local ansible_ssh_host=192.168.112.77 openshift_node_group_name='node-config-compute'
