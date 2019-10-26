@@ -297,14 +297,27 @@ nsx-node-agent-w9rkc       3/3       Running   0          5d
 **Notice the changes to the existing logical switches/segments, Tier 1 Logical Routers, Load Balancer below . All these newly created objects have been provisioned by NCP (as soon as NCP Pod has been successfully deployed) by identifying the  the K8S desired state and mapping the K8S resources in etcd to the NSX-T Logical Networking constructs.**
 
 We can view the tier1 gateway created by NCP:  
+<<<<<<< HEAD
+=======
+
+![](2019-10-26-09-01-04.png)
+>>>>>>> 8fb6b07eaa2157403c326b3e2ace97af956ff7f2
 
 ![](2019-10-26-09-01-04.png)
 
+<<<<<<< HEAD
 
 This tieer1 have 9 Seegments, each segemnt its equal to OpenShift project:  
 ![](2019-10-26-09-02-22.png)
+=======
+This tieer1 have 9 Seegments, each segemnt its equal to OpenShift project:  
+![](2019-10-26-09-02-22.png)
 
+>>>>>>> 8fb6b07eaa2157403c326b3e2ace97af956ff7f2
 
+For each OpenShift project we have NAT etry created on the tier1 Gateway:
+
+<<<<<<< HEAD
 For each OpenShift project we have NAT etry created on the tier1 Gateway:
 
 ![](2019-10-26-09-03-52.png)
@@ -312,6 +325,13 @@ For each OpenShift project we have NAT etry created on the tier1 Gateway:
 NCP automaticly created Load Balancer with two VIPs:
 ![](2019-10-26-09-06-32.png)
 
+=======
+![](2019-10-26-09-03-52.png)
+
+NCP automaticly created Load Balancer with two VIPs:
+![](2019-10-26-09-06-32.png)
+
+>>>>>>> 8fb6b07eaa2157403c326b3e2ace97af956ff7f2
 In The Virtual Server (VIP) we have two L7 etnry:
 ![](2019-10-26-09-07-21.png)
 
@@ -335,6 +355,38 @@ git clone https://github.com/roie9876/acme_fitness_demo
 
 
 
+<<<<<<< HEAD
+=======
+create acme  project, we can work with NAT namespace or No-NAT. 
+lets create it with NAT (this is the default). 
+
+
+<pre><code>
+[root@master01 home]# oc new-project acme
+Already on project "acme" on server "https://master01.lab.local:8443".
+
+You can add applications to this project with the 'new-app' command. For example, try:
+
+    oc new-app centos/ruby-25-centos7~https://github.com/sclorg/ruby-ex.git
+
+to build a new example application in Ruby.
+
+</code></pre> 
+
+
+We can see the results of the new project in NSX Segments, we have new Segment with the name: seg-openshift-acme-0.  
+In the PORTS we have 0 Connected PODs (we didn't deploy any PODs yet...)
+
+![](2019-10-26-10-41-21.png)
+
+NSXT curve new CIDR 10.11.10.0/24 where the 10.11.10.1 is the default Gateway for this namespce 
+![](2019-10-26-10-42-19.png)
+
+We can chekc if we have NCP create NAT rule for this namespace:  
+As you can see there is no any ANT entry for 10.19.2.0/42
+![](2019-10-25-16-17-39.png)
+
+>>>>>>> 8fb6b07eaa2157403c326b3e2ace97af956ff7f2
 
 # Deploy the acme application:  
 <pre><code>
@@ -364,7 +416,12 @@ service/users-mongo created
 deployment.apps/users-mongo created
 service/users created
 deployment.apps/users created
+<<<<<<< HEAD
 </code></pre>
+=======
+
+ </code></pre>    
+>>>>>>> 8fb6b07eaa2157403c326b3e2ace97af956ff7f2
 
 Check The status of the PODs
 
@@ -382,10 +439,15 @@ payment-77d6776ddc-2s9lq         1/1       Running   0          22s       10.11.
 users-d5856777d-9f4ng            1/1       Running   0          21s       10.11.10.11   node01.lab.local     <none>
 users-mongo-647bd448b-qkqsp      1/1       Running   0          21s       10.11.10.10   master01.lab.local   <none>
 
+<<<<<<< HEAD
+=======
+  
+>>>>>>> 8fb6b07eaa2157403c326b3e2ace97af956ff7f2
 </code></pre>   
 As you can see, all the PODs get IPs from range 10.11.10.0/24
 
 We can see the reflections of the PODs in NSXT
+<<<<<<< HEAD
 ![](2019-10-26-16-19-55.png) 
 
 Now we have 10 PORTs connected to this segments
@@ -394,6 +456,16 @@ we can see the PODs name from NSX UI:
 
 We can see all the OpenShift tags from the NSX UI:  
 ![](2019-10-26-16-21-01.png)
+=======
+![](2019-10-26-10-46-46.png)
+
+Now we have 10 PORTs connected to this segments
+we can see the PODs name from NSX UI:  
+![](2019-10-26-10-47-06.png)
+
+We can see all the K8s tags from the NSX UI:  
+![](2019-10-26-10-47-36.png)
+>>>>>>> 8fb6b07eaa2157403c326b3e2ace97af956ff7f2
 
 
 
