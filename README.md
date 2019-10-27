@@ -4,7 +4,7 @@ This repo contain the demo for vmworld 2019 and show how NSX-T SDN can work in p
 _**This disclaimer informs readers that the views, thoughts, and opinions expressed in this series of posts belong solely to the author, and not necessarily to the author’s employer, organization, committee or other group or individual.**_
 
 ### Credits  
-This guide is based on Dumlue Trump Amazning Guide:  
+This guide is based on Dumlu Timuralp Amazning Guide:  
  [@dumlutimuralp](https://twitter.com/dumlutimuralp) / [LinkedIn](https://www.linkedin.com/in/dumlutimuralp/) 
 
 His works can be found in this link:  
