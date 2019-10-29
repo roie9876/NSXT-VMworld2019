@@ -11,6 +11,11 @@ His works can be found in this link:
 https://github.com/dumlutimuralp/nsx-t-k8s  
   
 
+Another great resource for NCP and OpenShift integration can be found at Vincent Han blog:
+http://blog.acepod.com/how-to-install-openshift-container-platform-ocp-with-nsx-t-ncp/
+https://github.com/vincenthanjs/openshift3.11-ncp2.4
+
+
 
 #  Software components used:  
 
