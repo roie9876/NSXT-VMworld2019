@@ -12,8 +12,15 @@
 ## Deploy OpenShift Cluster
 
 We deploy new OpenShift Cluster in version 3.11.  
-You can read very good blog post created by Yasen Simeonov:
-https://blogs.vmware.com/networkvirtualization/2019/02/nsx-t-integration-with-openshift.html/ 
+
+Great resource for NCP and OpenShift integration can be found at Vincent Han blog:
+http://blog.acepod.com/how-to-install-openshift-container-platform-ocp-with-nsx-t-ncp/
+https://github.com/vincenthanjs/openshift3.11-ncp2.4
+
+Another resource is blog post created by Yasen Simeonov:
+https://blogs.vmware.com/networkvirtualization/2019/09/nsx-t-2-5-what-is-new-for-kubernetes.html/
+
+
 
 In my lab i deploy 7 VMs as fllows:  
 
