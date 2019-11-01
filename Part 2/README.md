@@ -96,5 +96,5 @@ VLANs are used and locally significant only between the K8S worker node vNIC and
 
 **Note** : By default K8S does not deploy workload Pods on the Master node. Hence technically NSX components are not needed on the master node but only on the worker nodes when defaults are used. In our environment, even though workload Pod are not going to be deploted on K8S master, NSX Components are installed on all K8S nodes including the master. (For reference, scheduling Pods on the master node can be configured , more info [here](https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/))
 
-## [Part 3](https://github.com/dumlutimuralp/nsx-t-k8s/blob/master/Part%203/README.md)
+## [Part 3](https://github.com/roie9876/NSXT-VMworld2019/tree/master/Part%203)
 

@@ -713,6 +713,6 @@ vmware@ubuntu:~$
 
 [Back to Table of Contents](#Table-Of-Contents)
 
-### [Part 4](https://github.com/dumlutimuralp/nsx-t-k8s/blob/master/Part%204/README.md)
+### [Part 4](https://github.com/roie9876/NSXT-VMworld2019/tree/master/Part%204)
 
 

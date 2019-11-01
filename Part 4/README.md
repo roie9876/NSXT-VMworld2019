@@ -575,7 +575,7 @@ kube-scheduler-master            1/1     Running   0          4d5h
 # Deploy the acme application
 Thie application contains a Polyglot demo application comprised of (presently) 6 microservices and 4 datastores:  
 
-![](2019-10-25-15-41-51.png)
+![](2019-11-01-07-58-41.png)
 
 The contents here are the necessary YAML files to deploy the ACMEFIT application in a kubernetes cluster.
 
@@ -845,3 +845,4 @@ We can view the re-write rule from the UI:
 
 The user sends traffic to URL: frontend.lab.local which hit the L7 Ingress in NSX LB. Then the NSX LB re-write this request and sends it to the K8s frontend pool.
 
+### [Part 5](https://github.com/roie9876/NSXT-VMworld2019/tree/master/Part%205)

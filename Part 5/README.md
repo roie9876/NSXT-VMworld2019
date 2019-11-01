@@ -347,7 +347,7 @@ In The Virtual Server (VIP) we have two L7 etnry:
 # Deploy the acme application
 Thie application contains a Polyglot demo application comprised of (presently) 6 microservices and 4 datastores:  
 
-![](2019-10-26-16-12-27.png)
+![](2019-11-01-07-59-16.png)
 
 The contents here are the necessary YAML files to deploy the ACMEFIT application in a OpenShift cluster.
 
