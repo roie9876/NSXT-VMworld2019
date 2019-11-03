@@ -117,6 +117,51 @@ Last step is to deploy the Openshift cluster:
 ansible-playbook -i hosts openshift-ansible/playbooks/deploy_cluster.yml
 </code></pre>
 
+The ansible script will fail during the first deployment.
+The output for the cluster status may look like this:
+
+
+<pre><code>
+[root@master01 kubernetes-manifests]# oc get node
+NAME                 STATUS       ROLES            AGE       VERSION
+infra01.lab.local    NotReady     compute,infra    6d        v1.11.0+d4cacc0
+infra02.lab.local    NotReady     compute,infra    6d        v1.11.0+d4cacc0
+master01.lab.local   NotReady     compute,master   6d        v1.11.0+d4cacc0
+master02.lab.local   NotReady     compute,master   6d        v1.11.0+d4cacc0
+master03.lab.local   NotReady     compute,master   6d        v1.11.0+d4cacc0
+node01.lab.local     Ready        compute          6d        v1.11.0+d4cacc0
+node02.lab.local     Ready        compute          6d        v1.11.0+d4cacc0
+</code></pre>
+
+The workaround for this problem is to add "compute" role for all masters and infra nodes:
+
+<pre><code>
+node-role.kubernetes.io/compute: "true"
+</code></pre>
+
+For example for the infra01.lab.local node we can add compute role to the node using the following command:
+
+<pre><code>
+oc edit node infra01.lab.local
+
+
+apiVersion: v1
+kind: Node
+metadata:
+  annotations:
+    node.openshift.io/md5sum: 7b216bf0e1a23a5541e567e3944bec6f
+    volumes.kubernetes.io/controller-managed-attach-detach: "true"
+  creationTimestamp: 2019-10-19T20:04:12Z
+  labels:
+    beta.kubernetes.io/arch: amd64
+    beta.kubernetes.io/os: linux
+    kubernetes.io/hostname: infra01.lab.local
+    node-role.kubernetes.io/compute: "true"
+
+</code></pre>  
+
+
+After adding compoute role for masters and infra:
 
 <pre><code>
 [root@master01 kubernetes-manifests]# oc get node
