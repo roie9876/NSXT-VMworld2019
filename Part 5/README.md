@@ -164,14 +164,6 @@ metadata:
 </code></pre>  
 
 
-
-
-
-The original unmodified ncp-openshift can be found here:
-https://github.com/roie9876/NSXT-VMworld2019/blob/master/Part%205/ncp-openshift.yaml
-
-
-
 # NSX Container Plugin Installation
 [Back to Table of Contents](#Table-Of-Contents)
 
@@ -215,6 +207,9 @@ docker image tag registry.local/nsx-ncp-rhel-2.5.0.14628220.tar nsx-ncp
 
 The file, "ncp-opensift.yml" will be used to deploy NSX Container Plugin. Node-Agent, Kube-Proxy , OVS and other related NCP configurations. 
 However, before moving forward, NSX-T specific environmental parameters need to be configured. The yml file contains a configmap for the configuration of the ncp.ini file for the NCP.  Basically most of the parameters are commented out with a "#" character. The definitions of each parameter are in the yml file itself. 
+
+The original unmodified ncp-openshift can be found here:
+https://github.com/roie9876/NSXT-VMworld2019/blob/master/Part%205/ncp-openshift.yaml
 
 The "ncp-opensift.yml" file can simply be edited with a text editor. The parameters in the file that are used in this environment has "#" removed. Below is a list and explanation of each :
 
