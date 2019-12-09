@@ -117,7 +117,7 @@ Last step is to deploy the Openshift cluster:
 ansible-playbook -i hosts openshift-ansible/playbooks/deploy_cluster.yml
 </code></pre>
 
-The ansible script will fail during the first deployment.
+The ansible script will fail during the first deployment becuase we did not deploy the CNI part yet.
 The output for the cluster status may look like this:
 
 
@@ -129,11 +129,14 @@ infra02.lab.local    NotReady     compute,infra    6d        v1.11.0+d4cacc0
 master01.lab.local   NotReady     compute,master   6d        v1.11.0+d4cacc0
 master02.lab.local   NotReady     compute,master   6d        v1.11.0+d4cacc0
 master03.lab.local   NotReady     compute,master   6d        v1.11.0+d4cacc0
-node01.lab.local     Ready        compute          6d        v1.11.0+d4cacc0
-node02.lab.local     Ready        compute          6d        v1.11.0+d4cacc0
+node01.lab.local     NotReady     compute          6d        v1.11.0+d4cacc0
+node02.lab.local     NotReady     compute          6d        v1.11.0+d4cacc0
 </code></pre>
 
-The workaround for this problem is to add "compute" role for all masters and infra nodes:
+but before deploying the NSX as CNI plugin we need to tweak the compute/masters node role because of a bug.
+
+
+to work around this bug use this process:
 
 <pre><code>
 node-role.kubernetes.io/compute: "true"
@@ -161,23 +164,8 @@ metadata:
 </code></pre>  
 
 
-After adding compoute role for masters and infra:
-
-<pre><code>
-[root@master01 kubernetes-manifests]# oc get node
-NAME                 STATUS    ROLES            AGE       VERSION
-infra01.lab.local    Ready     compute,infra    6d        v1.11.0+d4cacc0
-infra02.lab.local    Ready     compute,infra    6d        v1.11.0+d4cacc0
-master01.lab.local   Ready     compute,master   6d        v1.11.0+d4cacc0
-master02.lab.local   Ready     compute,master   6d        v1.11.0+d4cacc0
-master03.lab.local   Ready     compute,master   6d        v1.11.0+d4cacc0
-node01.lab.local     Ready     compute          6d        v1.11.0+d4cacc0
-node02.lab.local     Ready     compute          6d        v1.11.0+d4cacc0
-</code></pre>
 
 
-When the deploy cluster ansible script finish there is no function SDN in the cluster.  
-We need to deploy the ncp-openshift.yaml
 
 The original unmodified ncp-openshift can be found here:
 https://github.com/roie9876/NSXT-VMworld2019/blob/master/Part%205/ncp-openshift.yaml
@@ -264,7 +252,9 @@ let's start to explain the different parameters:
 
 **enable_snat = True** : This parameter basically defines that all the K8S Pods in each K8S namespace in this K8S cluster will be SNATed (to be able to access the other resources in the datacenter external to NSX domain) . The SNAT rules will be autoatically provisioned on Tier 0 Router in this lab. The SNAT IP will be allocated from IP Pool named "K8S-NAT-Pool" that was configured back in Part 3.
 
-**apiserver_host_port = 6443** : These parameters are for NCP to access K8S API. **Note this parnter need to configured multiple times in this yaml file, so every time you this parmter you need to configure the same value**
+**apiserver_host_port = 8443
+
+** : These parameters are for NCP to access K8S API. **Note this parnter need to configured multiple times in this yaml file, so every time you this parmter you need to configure the same value**
   
 **apiserver_host_ip = 192.168.113.2**  
 This is the IP address of the master node, if we have clusters of k8s masters we need to use the LB VIP.  
@@ -388,6 +378,19 @@ In The Virtual Server (VIP) we have two L7 etnry:
 ![](2019-10-26-09-07-21.png)
 
 
+After deploying the NSX as CNI plugin we can see the cluster changed to Ready state:
+
+<pre><code>
+[root@master01 kubernetes-manifests]# oc get node
+NAME                 STATUS    ROLES            AGE       VERSION
+infra01.lab.local    Ready     compute,infra    6d        v1.11.0+d4cacc0
+infra02.lab.local    Ready     compute,infra    6d        v1.11.0+d4cacc0
+master01.lab.local   Ready     compute,master   6d        v1.11.0+d4cacc0
+master02.lab.local   Ready     compute,master   6d        v1.11.0+d4cacc0
+master03.lab.local   Ready     compute,master   6d        v1.11.0+d4cacc0
+node01.lab.local     Ready     compute          6d        v1.11.0+d4cacc0
+node02.lab.local     Ready     compute          6d        v1.11.0+d4cacc0
+</code></pre>
 
 # Deploy the acme application
 Thie application contains a Polyglot demo application comprised of (presently) 6 microservices and 4 datastores:  
